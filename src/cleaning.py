@@ -17,7 +17,8 @@ if __name__=='__main__':
 
     # plotting the correlation matrix
     # as seaborn is based on matplotlib, we need to use plt.show() to see the plot
-    sns.heatmap(turnover.corr())
+    fig, ax = plt.subplots(figsize=(12,12))
+    ax = sns.heatmap(turnover.corr())
     plt.show()
     plt.savefig('correlation_matrix.png')
     plt.tight_layout()
