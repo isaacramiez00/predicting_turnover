@@ -74,34 +74,55 @@ if __name__=='__main__':
 
     dt.fit(X_train, y_train)
     training_accuracy = dt.score(X_train, y_train)
+    train_error = 1.0 - training_accuracy
     print(f'training-accuracy: {round(training_accuracy,2)}')
+    print(f'train-error: {round(train_error,2)}')
 
     y_pred = dt.predict(X_test)
     test_accuracy = dt.score(X_test, y_test)
+    test_error = 1.0 - test_accuracy
     print(f'test-accuracy: {round(test_accuracy, 2)}')
+    print(f'test-error: {round(test_accuracy,2)}')
 
-    plt.figure(1)
-    tree.plot_tree(dt.fit(X, y), filled=True)
-    plt.show()
+    # decision tree plot
+    # plt.figure(1)
+    # tree.plot_tree(dt.fit(X, y), filled=True)
+    # plt.show()
 
     # feature_importances_
     feat_dict = {k: v for k, v in zip(features, dt.feature_importances_)} # satisfaction_level and time spend_in_company -> best feat
 
-    # # confusion matrix
-    # print(confusion_matrix(y_test, y_pred))
+    # confusion matrix
+    print(confusion_matrix(y_test, y_pred))
     
     # # roc curve
-    # fpr, tpr, thresholds = roc_curve(y_test, y_pred, pos_label=1)
-    # print(auc(fpr, tpr))
+    fpr, tpr, thresholds = roc_curve(y_test, y_pred, pos_label=1)
+    auc_ = auc(fpr, tpr)
 
-    # plt.figure(2)
-    # plt.plot([0, 1], [0, 1], 'k--')
-    # plt.plot(fpr, tpr)
-    # plt.xlabel('False positive rate')
-    # plt.ylabel('True positive rate')
-    # plt.title('ROC curve')
-    # # plt.legend(loc='best')
-    # plt.show()
+    fig, ax = plt.subplots(2,1, figsize=(8,5))
+
+    # roc curve plot
+    ax[0].plot([0, 1], [0, 1], 'k--')
+    ax[0].plot(fpr, tpr, label=f'DT; AUC = {round(auc_,2)}')
+    ax[0].set_xlabel('False positive rate')
+    ax[0].set_ylabel('True positive rate')
+    ax[0].set_title('ROC curve')
+    ax[0].legend(loc='best')
+
+    d_trees = np.arange(dt.get_depth())
+
+    train_error_lst = []
+    test_error_lst = []
+    for tree in d_trees:
+        
+        # train/test error plot
+        ax[1].plot(np.arange(dt.get_depth()) + 1, train_error, label='train-error')
+        ax[1].plot(np.arange(dt.get_depth()) + 1, test_error, label='test-error')
+        ax[1].set_xlabel('False positive rate')
+        ax[1].set_ylabel('True positive rate')
+        ax[1].set_title('ROC curve')
+        ax[1].legend(loc='best')
+        plt.show()
 
     # plt.figure(3)
     # plot_errors()
