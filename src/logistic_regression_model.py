@@ -69,79 +69,44 @@ def stage_score_plot(estimator, X_train, y_train, X_test, y_test):
 
 if __name__=='__main__':
 
-    # cleaning data
-    turnover = pd.read_csv("../data/turnover.csv")
-    turnover["salary"] = turnover["salary"].astype('category').cat.reorder_categories(['low', 'medium', 'high']).cat.codes
-    turnover.rename(columns={'sales': 'department'}, inplace=True)
-    department = pd.get_dummies(turnover["department"])
-    turnover = turnover.drop(["department"], axis=1)
+    ################ ___NEWNEW_______
+    logistic regression model
 
-    # # add dummy variables -- not sure if I need it
-    # turnover = turnover.join(department)
+    log_turnover = pd.read_csv("../data/turnover.csv")
+    log_turnover["salary"] = log_turnover["salary"].astype('category').cat.reorder_categories(['low', 'medium', 'high']).cat.codes
+    log_turnover.rename(columns={'sales': 'department'}, inplace=True)
+    log_department = pd.get_dummies(log_turnover["department"])
 
-    # plotting the correlation matrix
-    # fig, ax = plt.subplots(figsize=(8,5))
-    # ax = sns.heatmap(turnover.corr())
-    # plt.show()
-    # plt.savefig('correlation_matrix.png')
-    # plt.tight_layout()
-    # after looking into the correlation matrix, I decided to reduce to 4 features to predict employee turnover
+    log_turnover = log_turnover.drop(["department"], axis=1)
 
-    # # the percentage of leavers
-    # turnover['left'].value_counts()/len(turnover)
 
-    # # Decision Tree Classifier
-    features = ['satisfaction_level', 'time_spend_company', 'Work_accident', 'promotion_last_5years', 'salary']
-    top_feat = features[:2] # after revisiting
-    dt = DecisionTreeClassifier(random_state=42)
-    y = turnover.pop('left').values
-    X = turnover[top_feat].values
+    X = log_turnover['satisfaction_level'].values
+    y = log_turnover['left'].values
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-    dt.fit(X_train, y_train)
-    training_accuracy = dt.score(X_train, y_train)
-    train_error = 1.0 - training_accuracy
-    print(f'training-accuracy: {round(training_accuracy,2)}')
-    print(f'train-error: {round(train_error,2)}')
-
-    y_pred = dt.predict(X_test)
-    test_accuracy = dt.score(X_test, y_test)
-    test_error = 1.0 - test_accuracy
-    print(f'test-accuracy: {round(test_accuracy, 2)}')
-    print(f'test-error: {round(test_error,2)}')
-
-    # accuracy score plot
-    fig, ax = plt.subplots(figsize=(8,5))
-    ax.plot()
+    log_model = LogisticRegression()
+    log_model.fit(X_train.reshape(1,-1), y_train)
+    y_hat_prob = log_model.predict_proba(X_test)[:,0] # first column = satisfaction_level
+    print(y_hat_prob)
+    threshold = 0.5
+    y_pred = (y_hat_prob >= threshold).astype(int)
+    print(y_pred)
 
 
-    # decision tree plot
-    # plt.figure(1)
-    # tree.plot_tree(dt.fit(X, y), filled=True)
-    # plt.show()
+    print(log_turnover.head())
 
-    # feature_importances_
-    feat_dict = {k: v for k, v in zip(features, dt.feature_importances_)} # satisfaction_level and time spend_in_company -> best feat
+    x_ = np.linspace(0,1,100).reshape(-1,1)
+    sigmoid = log_model.predict_proba(x_)
 
-    # confusion matrix
-    print(confusion_matrix(y_test, y_pred))
-    
-    # # roc curve summary
-    fpr, tpr, thresholds = roc_curve(y_test, y_pred, pos_label=1)
-    auc_ = auc(fpr, tpr)
-
-    fig, ax = plt.subplots(2,1, figsize=(8,5))
-
-    # roc curve plot
-    ax[0].plot([0, 1], [0, 1], 'k--')
-    ax[0].plot(fpr, tpr, label=f'DT; AUC = {round(auc_,2)}')
-    ax[0].set_xlabel('False positive rate')
-    ax[0].set_ylabel('True positive rate')
-    ax[0].set_title('ROC curve')
-    ax[0].legend(loc='best')
-
-    d_trees = np.arange(dt.get_depth())
-
-
-    
+    fig = plt.figure(figsize=(8,5))
+    ax = fig.add_subplot(111)
+    ax.scatter(X[:,0], y, c=y, cmap='bwr', edgecolor='')
+    ax.plot(x, sigmoid, 'g--', label='probability of employee turnover')
+    # ax.set_xlim([-0.2,1.201])
+    # ax.set_ylim([-0.2,1.201])
+    ax.set_xlabel('satifaction_level',fontsize=24)
+    ax.set_ylabel('left (1 = Left)',fontsize=24)
+    ax.set_title('Employee Turnover vs. Satisfaction Level',fontsize=24)
+    # ax.legend(fontsize=24)
+    plt.show()

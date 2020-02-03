@@ -36,7 +36,36 @@ def plot_errors():
 	plt.legend()
 	plt.show()
 
+def stage_score_plot(estimator, X_train, y_train, X_test, y_test):
+    '''
+        Parameters: estimator: GradientBoostingRegressor or AdaBoostRegressor
+                    X_train: 2d numpy array
+                    y_train: 1d numpy array
+                    X_test: 2d numpy array
+                    y_test: 1d numpy array
 
+        Returns: A plot of the number of iterations vs the MSE for the model for
+        both the training set and test set.
+    '''
+    estimator.fit(X_train, y_train)
+    name = estimator.__class__.__name__.replace('Regressor', '')
+    learn_rate = estimator.learning_rate
+    # initialize 
+    train_scores = np.zeros((estimator.n_estimators,), dtype=np.float64)
+    test_scores = np.zeros((estimator.n_estimators,), dtype=np.float64)
+    # Get train score from each boost
+    for i, y_train_pred in enumerate(estimator.staged_predict(X_train)):
+        train_scores[i] = mean_squared_error(y_train, y_train_pred)
+    # Get test score from each boost
+    for i, y_test_pred in enumerate(estimator.staged_predict(X_test)):
+        test_scores[i] = mean_squared_error(y_test, y_test_pred)
+    plt.plot(train_scores, alpha=.5, label="{0} Train - learning rate {1}".format(
+                                                                name, learn_rate))
+    plt.plot(test_scores, alpha=.5, label="{0} Test  - learning rate {1}".format(
+                                                      name, learn_rate), ls='--')
+    plt.title(name, fontsize=16, fontweight='bold')
+    plt.ylabel('MSE', fontsize=14)
+    plt.xlabel('Iterations', fontsize=14)
 
 if __name__=='__main__':
 
@@ -82,7 +111,7 @@ if __name__=='__main__':
     test_accuracy = dt.score(X_test, y_test)
     test_error = 1.0 - test_accuracy
     print(f'test-accuracy: {round(test_accuracy, 2)}')
-    print(f'test-error: {round(test_accuracy,2)}')
+    print(f'test-error: {round(test_error,2)}')
 
     # decision tree plot
     # plt.figure(1)
@@ -111,18 +140,18 @@ if __name__=='__main__':
 
     d_trees = np.arange(dt.get_depth())
 
-    train_error_lst = []
-    test_error_lst = []
-    for tree in d_trees:
+    # train_error_lst = []
+    # test_error_lst = []
+    # for tree in d_trees:
         
-        # train/test error plot
-        ax[1].plot(np.arange(dt.get_depth()) + 1, train_error, label='train-error')
-        ax[1].plot(np.arange(dt.get_depth()) + 1, test_error, label='test-error')
-        ax[1].set_xlabel('False positive rate')
-        ax[1].set_ylabel('True positive rate')
-        ax[1].set_title('ROC curve')
-        ax[1].legend(loc='best')
-        plt.show()
+    #     # train/test error plot
+    #     ax[1].plot(np.arange(dt.get_depth()) + 1, train_error, label='train-error')
+    #     ax[1].plot(np.arange(dt.get_depth()) + 1, test_error, label='test-error')
+    #     ax[1].set_xlabel('False positive rate')
+    #     ax[1].set_ylabel('True positive rate')
+    #     ax[1].set_title('ROC curve')
+    #     ax[1].legend(loc='best')
+    #     plt.show()
 
     # plt.figure(3)
     # plot_errors()
@@ -168,3 +197,29 @@ if __name__=='__main__':
     # ax.set_title('Employee Turnover vs. Satisfaction Level',fontsize=24)
     # # ax.legend(fontsize=24)
     # plt.show()
+
+    # exploratory data
+    employee_turnvover = turnover.groupby('left').sum()
+    employee_turnvover.head()
+    # employee_turnvover.columns
+    labels = ['IT', 'RandD', 'accounting', 'hr',
+        'management', 'marketing', 'product_mng', 'sales', 'support',
+        'technical']
+    # side by side bar chart
+    stayed = employee_turnvover.iloc[0,8:].values
+    left = employee_turnvover.iloc[1,8:].values
+
+    fig, ax = plt.subplots(figsize=(12,5))
+    width = 0.4
+    xlocs = np.arange(len(left))
+    ax.bar(xlocs-width, left, width, color='cornflowerblue', label='Left')
+    ax.bar(xlocs, stayed, width, color='hotpink', label='Stayed')
+
+    ax.set_xticks(ticks=range(len(left)))
+    ax.set_xticklabels(labels)
+    ax.yaxis.grid(True)
+    ax.legend(loc='best')
+    ax.set_ylabel('Number of Employees')
+    ax.set_title('Employee Turnover by Department')
+    fig.tight_layout(pad=1)
+    # top sales, support, technical 
