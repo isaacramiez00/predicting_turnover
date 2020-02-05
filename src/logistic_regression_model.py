@@ -70,7 +70,7 @@ def stage_score_plot(estimator, X_train, y_train, X_test, y_test):
 if __name__=='__main__':
 
     ################ ___NEWNEW_______
-    logistic regression model
+    # logistic regression model
 
     log_turnover = pd.read_csv("../data/turnover.csv")
     log_turnover["salary"] = log_turnover["salary"].astype('category').cat.reorder_categories(['low', 'medium', 'high']).cat.codes
@@ -79,34 +79,41 @@ if __name__=='__main__':
 
     log_turnover = log_turnover.drop(["department"], axis=1)
 
-
-    X = log_turnover['satisfaction_level'].values
-    y = log_turnover['left'].values
+    y = log_turnover.pop('left').values
+    X = log_turnover.values
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
     log_model = LogisticRegression()
-    log_model.fit(X_train.reshape(1,-1), y_train)
-    y_hat_prob = log_model.predict_proba(X_test)[:,0] # first column = satisfaction_level
+    log_model.fit(X_train, y_train)
+    y_hat_prob = log_model.predict_proba(X_test) # first column = satisfaction_level
     print(y_hat_prob)
     threshold = 0.5
     y_pred = (y_hat_prob >= threshold).astype(int)
     print(y_pred)
 
+    # accuracy score for train and test
+    print(round(log_model.score(X_train, y_train),2))
+    print(round(log_model.score(X_test, y_test),2))
+    # lets use of the reguluatization methods to try -l1, l2 
+    
 
-    print(log_turnover.head())
 
-    x_ = np.linspace(0,1,100).reshape(-1,1)
-    sigmoid = log_model.predict_proba(x_)
 
-    fig = plt.figure(figsize=(8,5))
-    ax = fig.add_subplot(111)
-    ax.scatter(X[:,0], y, c=y, cmap='bwr', edgecolor='')
-    ax.plot(x, sigmoid, 'g--', label='probability of employee turnover')
-    # ax.set_xlim([-0.2,1.201])
-    # ax.set_ylim([-0.2,1.201])
-    ax.set_xlabel('satifaction_level',fontsize=24)
-    ax.set_ylabel('left (1 = Left)',fontsize=24)
-    ax.set_title('Employee Turnover vs. Satisfaction Level',fontsize=24)
-    # ax.legend(fontsize=24)
-    plt.show()
+
+    # print(log_turnover.head())
+
+    # x_ = np.linspace(0,1,100).reshape(-1,1)
+    # sigmoid = log_model.predict_proba(x_)
+
+    # fig = plt.figure(figsize=(8,5))
+    # ax = fig.add_subplot(111)
+    # ax.scatter(X[:,0], y, c=y, cmap='bwr', edgecolor='')
+    # ax.plot(x, sigmoid, 'g--', label='probability of employee turnover')
+    # # ax.set_xlim([-0.2,1.201])
+    # # ax.set_ylim([-0.2,1.201])
+    # ax.set_xlabel('satifaction_level',fontsize=24)
+    # ax.set_ylabel('left (1 = Left)',fontsize=24)
+    # ax.set_title('Employee Turnover vs. Satisfaction Level',fontsize=24)
+    # # ax.legend(fontsize=24)
+    # plt.show()

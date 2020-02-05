@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 from matplotlib import cm
 import matplotlib.pyplot as plt
+import statsmodels.api as sm
 
 def scree_plot(ax, pca, n_components_to_plot=8, title=None):
     """Make a scree plot showing the variance explained (i.e. varaince of the projections) for the principal components in a fit sklearn PCA object.
@@ -94,19 +95,55 @@ if __name__=='__main__':
     y = turnover.pop('left')
     X = turnover # without the department (one-hot encodes), with 6 PC we are capturing 90% variance explained
 
-    # ss = preprocessing.StandardScaler()
-    # X_centered = ss.fit_transform(X)
-    # # print(X_centered.shape)
+    ss = preprocessing.StandardScaler()
+    X_centered = ss.fit_transform(X)
+    # print(X_centered.shape)
 
-    # pca = decomposition.PCA(n_components=8)
+    pca = decomposition.PCA(n_components=8)
+    X_pca = pca.fit_transform(X_centered)
+
+    # fitting and getting summary statistics
+    features = pd.DataFrame(X_pca)
+
+    X = sm.add_constant(features)
+    X  =X.reset_index(drop=True)
+
+    est = sm.OLS(y, X).fit()
+
+    print(est.summary())
+    # print(X_pca.shape)
+
+    # 90 percent variance
+    fig, ax = plt.subplots(figsize=(10, 6))
+    scree_plot(ax, pca, title="Scree Plot for Digits Principal Components (CumSum)")
+    plt.show()
+
+
+    pca = decomposition.PCA(n_components=2)
+    X_pca = pca.fit_transform(X_centered)
+    print(X_pca.shape)
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+    plot_mnist_embedding(ax, X_pca, y)
+    plt.show()
+
+
+
+    # pca on my department dataset
+    # dep_X = department
+    
+    # ss = preprocessing.StandardScaler()
+    # X_centered = ss.fit_transform(dep_X)
+    # print(X_centered.shape)
+
+    # pca = decomposition.PCA(n_components=10)
     # X_pca = pca.fit_transform(X_centered)
-    # # print(X_pca.shape)
+    # print(X_pca.shape)
 
     # # 90 percent variance
     # fig, ax = plt.subplots(figsize=(10, 6))
     # scree_plot(ax, pca, title="Scree Plot for Digits Principal Components (CumSum)")
     # plt.show()
-
 
     # pca = decomposition.PCA(n_components=2)
     # X_pca = pca.fit_transform(X_centered)
@@ -116,26 +153,3 @@ if __name__=='__main__':
     # plot_mnist_embedding(ax, X_pca, y)
     # plt.show()
 
-    # pca on my department dataset
-    dep_X = department
-    
-    ss = preprocessing.StandardScaler()
-    X_centered = ss.fit_transform(dep_X)
-    print(X_centered.shape)
-
-    pca = decomposition.PCA(n_components=10)
-    X_pca = pca.fit_transform(X_centered)
-    print(X_pca.shape)
-
-    # 90 percent variance
-    fig, ax = plt.subplots(figsize=(10, 6))
-    scree_plot(ax, pca, title="Scree Plot for Digits Principal Components (CumSum)")
-    plt.show()
-
-    pca = decomposition.PCA(n_components=2)
-    X_pca = pca.fit_transform(X_centered)
-    print(X_pca.shape)
-
-    fig, ax = plt.subplots(figsize=(10, 6))
-    plot_mnist_embedding(ax, X_pca, y)
-    plt.show()
