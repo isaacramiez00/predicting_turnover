@@ -38,5 +38,69 @@ department_dict = {'department': department_col, 'code': department_code_col}
 department_df = pd.DataFrame(data=department_dict) # use for eda
 
 
-explained_encoding_values_df = turnover[['department', 'salary']]
-# explained_encoding_values_df['total']
+# Data Visualization
+
+## department eda deepdive
+left_df = turnover[turnover['left']==1]
+department_df['left'] = left_df['department'].value_counts()
+
+stayed_df = turnover[turnover['left']==0]
+department_df['stayed'] = stayed_df['department'].value_counts()
+
+department_df['total_count'] = turnover['department'].value_counts()
+department_df['left_percentage'] = department_df['left'] / department_df['total_count']
+department_df.sort_values(by='left_percentage', axis=0, inplace=True)
+
+labels = department_df['department']
+data = department_df['left_percentage']
+N = 10
+fig, ax = plt.subplots(figsize=(8,5))
+width = 0.8
+tickLocations = np.arange(N)
+ax.bar(tickLocations, data, width, linewidth=3.0, align='center')
+ax.set_xticks(ticks=tickLocations)
+ax.set_xticklabels(labels)
+ax.set_xlim(min(tickLocations)-0.6,\
+            max(tickLocations)+0.6)
+ax.set_xlabel('Department')
+ax.set_ylabel('Employee Percent Turnvover')
+ax.set_yticks(np.linspace(0,0.5,6))
+ax.yaxis.grid(True)
+ax.set_title('Employer Turnover by Department')
+fig.tight_layout(pad=1)
+plt.savefig('Employer_Turnover_by_Department.png')
+
+
+
+## Salary eda deepdive
+
+left_df = turnover[turnover['left']==1]
+salary_df['left'] = left_df['salary'].value_counts()
+
+stayed_df = turnover[turnover['left']==0]
+salary_df['stayed'] = stayed_df['salary'].value_counts()
+
+salary_df['total_count'] = turnover['salary'].value_counts()
+salary_df['left_percentage'] = salary_df['left'] / salary_df['total_count']
+salary_df.sort_values(by='left_percentage', axis=0, inplace=True)
+
+labels = salary_df['salary']
+data = salary_df['left_percentage']
+N = 3
+fig, ax = plt.subplots(figsize=(8,5))
+width = 0.8
+tickLocations = np.arange(N)
+ax.bar(tickLocations, data, width, linewidth=3.0, align='center')
+ax.set_xticks(ticks=tickLocations)
+ax.set_xticklabels(labels)
+ax.set_xlim(min(tickLocations)-0.6,\
+            max(tickLocations)+0.6)
+ax.set_xlabel('Salary Ranking')
+ax.set_ylabel('Employee Percent Turnvover')
+ax.set_yticks(np.linspace(0,0.5,6))
+ax.yaxis.grid(True)
+ax.set_title('Employer Turnover by Salary Rank')
+fig.tight_layout(pad=1)
+plt.savefig('Employer_Turnover_by_Salary_rank.png')
+
+
