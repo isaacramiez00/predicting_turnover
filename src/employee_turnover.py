@@ -6,6 +6,8 @@ from sklearn.metrics import confusion_matrix, roc_curve, auc
 from sklearn.ensemble import RandomForestClassifier
 from sklearn import tree
 import numpy as np
+from sklearn.metrics import recall_score
+
 
 def plot_histograms():
 
@@ -52,6 +54,47 @@ def create_cat_percentage_df():
 
         plot_side_by_side_percentage_barcharts(current_df)
 
+def plot_ROC_curve():
+    # random forest model w recall score metric
+    rfc = RandomForestClassifier()
+    y = turnover.pop('left').values
+    X = turnover.values
+
+    ## data leakage problem
+
+    for idx in range(len(turnover.columns)):
+        # breakpoint()
+        features = list(turnover.columns)
+        data_leakage_feature = features.pop(idx)
+        X = turnover[features]
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+        rfc.fit(X_train, y_train)
+        y_pred = rfc.predict(X_test)
+
+        feat_dict = {k: v for k, v in zip(features, rfc.feature_importances_)}
+        print(feat_dict)
+        print(f'data-leak-feature: {data_leakage_feature}')
+        
+        recall = recall_score(y_test, y_pred)
+        print(f'recall-score: {round(recall,2)}')
+          
+
+        print(confusion_matrix(y_test, y_pred))
+        
+        ## roc curve
+        fpr, tpr, thresholds = roc_curve(y_test, y_pred, pos_label=1)
+        auc_ = auc(fpr, tpr)
+
+        fig, ax = plt.subplots(figsize=(8,5))
+
+        # roc curve plot
+        ax.plot([0, 1], [0, 1], 'k--')
+        ax.plot(fpr, tpr, label=f'RFC Recall Score= {round(recall,2)}')
+        ax.set_xlabel('False positive rate')
+        ax.set_ylabel('True positive rate')
+        ax.set_title(f'ROC curve With Out {data_leakage_feature} Feature')
+        ax.legend(loc='best')    
+        plt.savefig(f'ROC_Curve_Wout_{data_leakage_feature}_feature.png')
 
 
 
@@ -108,7 +151,7 @@ if __name__=='__main__':
     department_df = pd.DataFrame(data=department_dict) # use for eda
 
     # Data Visualization
-
+    '''
     create_cat_percentage_df()
 
     ## correlation matrix
@@ -181,36 +224,63 @@ if __name__=='__main__':
     ## continous-histograms
     plot_histograms()
     # plt.show()
+    '''
+    # plot_ROC_curve()
 
-    # random forest model w recall score metric
+    # plotting fixing recall score
+    # fig, ax = plt.subplots(figsize=(8,5))
+    # ax.bar()
+
+    # plt.show()
+
+    # recall score before dropping data leakage
+    # turnover.drop_duplicates(keep='first', inplace=True)
     rfc = RandomForestClassifier()
     y = turnover.pop('left').values
     X = turnover.values
-
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
+    rfc.fit(X_train, y_train)
     y_pred = rfc.predict(X_test)
 
-    ## data leakage problem
     features = list(turnover.columns)
     feat_dict = {k: v for k, v in zip(features, rfc.feature_importances_)}
+    print(feat_dict)
+    # print(f'data-leak-feature: {data_leakage_feature}')
+    
+    recall_before_drop = recall_score(y_test, y_pred)
+    print(f'recall-score before leakage: {round(recall_before_drop,2)}')
+    
 
-    for idx, feat in enumerate(features):
-        data_leakage_feature = features.pop(idx)
-        X = turnover[features]
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-        rfc.fit(X_train, y_train)
-        y_pred = rfc.predict(X_test)
+    turnover = pd.read_csv("../data/turnover.csv")
+    salary = turnover['salary'].value_counts()
+    salary_col = list(salary.index)
+    turnover["salary"] = turnover["salary"].astype('category').cat.reorder_categories(salary_col).cat.codes
+    salary_code = turnover.salary.value_counts()
+    salary_code_col = list(salary_code.index)
 
-        feat_dict = {k: v for k, v in zip(features, rfc.feature_importances_)}
-        print(feat_dict)
-        print(f'data-leak-feature: {data_leakage_feature}')
-        tn, fp, fn, tp = confusion_matrix(y_test, y_pred).ravel()
-        fpr = fp / (fp + tn)
-        print(f'fpr: {round(fpr,2)')
+    salary_dict = {'salary': salary_col, 'code': salary_code_col}
+    salary_df = pd.DataFrame(data=salary_dict) # use for eda
 
-        train_accuracy = rfc.score(X_train, y_train)
-        print(f'train-accuracy: {round(train_accuracy,2)}')
+    rename_columns = {'satisfaction_level': 'satisfaction_level_percentage',\
+                    'last_evaluation': 'last_evaluation_percentage',\
+                    'time_spend_company': 'time_spend_company_years',\
+                    'sales': 'department'}
+    turnover.rename(columns=rename_columns, inplace=True)
 
-        test_accuracy = rfc.score(X_test, y_test)
-        print(f'test-accuracy: {round(test_accuracy,2)} \n\n')
+    department = turnover.department.value_counts()
+    department_col = list(department.index)
+    turnover["department"] = turnover["department"].astype('category').cat.reorder_categories(department_col).cat.codes
+    # after dropping data leakage
+    turnover.drop_duplicates(keep='first', inplace=True)
+    y = turnover.pop('left').values
+    X = turnover.values
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    rfc.fit(X_train, y_train)
+    y_pred = rfc.predict(X_test)
+    
+    recall_after_drop = recall_score(y_test, y_pred)
+    print(f'recall-score after leakage: {round(recall_after_drop,2)}')
+
+    fig, ax = plt.subplots(figsize=(8,5))
+    pass
+    
