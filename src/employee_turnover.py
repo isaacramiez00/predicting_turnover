@@ -3,9 +3,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix, roc_curve, auc
-from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
 from sklearn import tree
-from sklearn.linear_model import LogisticRegression
 import numpy as np
 
 def plot_histograms():
@@ -108,18 +107,15 @@ if __name__=='__main__':
     department_dict = {'department': department_col, 'code': department_code_col}
     department_df = pd.DataFrame(data=department_dict) # use for eda
 
-    create_cat_percentage_df()
-    # plt.show()
+    # Data Visualization
 
-    # plotting the correlation matrix
-    # as seaborn is based on matplotlib, we need to use plt.show() to see the plot
+    create_cat_percentage_df()
+
+    ## correlation matrix
     fig, ax = plt.subplots(figsize=(9,6))
     ax = sns.heatmap(turnover.corr())
-    # plt.show()
-    # plt.savefig('correlation_matrix.png')
+    plt.savefig('correlation_matrix.png')
     plt.tight_layout(pad=4)
-
-    # Data Visualization
 
     ## department eda deepdive
     left_df = turnover[turnover['left']==1]
@@ -185,3 +181,36 @@ if __name__=='__main__':
     ## continous-histograms
     plot_histograms()
     # plt.show()
+
+    # random forest model w recall score metric
+    rfc = RandomForestClassifier()
+    y = turnover.pop('left').values
+    X = turnover.values
+
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+    y_pred = rfc.predict(X_test)
+
+    ## data leakage problem
+    features = list(turnover.columns)
+    feat_dict = {k: v for k, v in zip(features, rfc.feature_importances_)}
+
+    for idx, feat in enumerate(features):
+        data_leakage_feature = features.pop(idx)
+        X = turnover[features]
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+        rfc.fit(X_train, y_train)
+        y_pred = rfc.predict(X_test)
+
+        feat_dict = {k: v for k, v in zip(features, rfc.feature_importances_)}
+        print(feat_dict)
+        print(f'data-leak-feature: {data_leakage_feature}')
+        tn, fp, fn, tp = confusion_matrix(y_test, y_pred).ravel()
+        fpr = fp / (fp + tn)
+        print(f'fpr: {round(fpr,2)')
+
+        train_accuracy = rfc.score(X_train, y_train)
+        print(f'train-accuracy: {round(train_accuracy,2)}')
+
+        test_accuracy = rfc.score(X_test, y_test)
+        print(f'test-accuracy: {round(test_accuracy,2)} \n\n')
