@@ -1,14 +1,3 @@
-# 
-
-data cleaning
-eda 
-random forest
-metric - recall score equation -> 1 - FNR ; goal (minimize) false negative rate
-why - bc we don't want to incorrectly predict someone would stay but in realilty they left
-
-goal - see what feature is giving us the lowest recall score (allowing the most FN)
-
-
 # Predicting Employee Turnover
 
 # Table Of Contents
@@ -16,10 +5,9 @@ goal - see what feature is giving us the lowest recall score (allowing the most 
 2. [Project Questions/Goal](#project-questions/goals)
 3. [Data](#the-data)
 4. [Exporatory Data Analysis (EDA)](#exploratory-data-analysis-(eda))
-5. [Analysis](#analysis)
+5. [model](#analysis)
 6. [Conclusion](#conclusion)
 7. [References](#references)
-
 
 
 # Overview/ Background
@@ -53,69 +41,75 @@ The data for this project was pulled from kaggle from [Hr Analytic](https://www.
 
 The dataset was 14999 rows, 10 columns
 
-![turnover-dataset-p1](turnover_df_slice_1.png)
+![turnover-dataset-p1](https://github.com/isaacramiez00/predicting_turnover/blob/master/imgs/turnover_df_slice_1.png)
 Dataset the first 4 columns
 
-![turnover-datset-p2](turnover_df_slice_2.png)
+![turnover-datset-p2](https://github.com/isaacramiez00/predicting_turnover/blob/master/imgs/turnover_df_slice_2.png)
 Dataset the first 6 columns
 
-![salary-encode](salary_encoded.png)
+![salary-encode](https://github.com/isaacramiez00/predicting_turnover/blob/master/imgs/salary_encoded.png)
 
-![department-encode](department_encoded.png)
+![department-encode](https://github.com/isaacramiez00/predicting_turnover/blob/master/imgs/department_encoded.png)
 
 
 # Exploratory Data Analysis (EDA)
 
-![satisfaction-level](satisfaction_level_percentage.png)
+![satisfaction-level](https://github.com/isaacramiez00/predicting_turnover/blob/master/imgs/satisfaction_level_percentage.png)
 
-![last-eval](last_evaluation_percentage.png)
+![last-eval](https://github.com/isaacramiez00/predicting_turnover/blob/master/imgs/last_evaluation_percentage.png)
 
-![number-projects](Employer_Turnover_by_number_project.png)
+![number-projects](https://github.com/isaacramiez00/predicting_turnover/blob/master/imgs/Employer_Turnover_by_number_project.png)
 
-![avg-monthly-hours](average_monthly_hours.png)
+![avg-monthly-hours](https://github.com/isaacramiez00/predicting_turnover/blob/master/imgs/average_montly_hours.png)
 
-![time-spend-company-years](Employer_Turnover_by_time_spend_company_years.png)
+![time-spend-company-years](https://github.com/isaacramiez00/predicting_turnover/blob/master/imgs/Employer_Turnover_by_time_spend_company_years.png)
 
-![work-accident](Employer_Turnover_by_Work_accident.png)
+![work-accident](https://github.com/isaacramiez00/predicting_turnover/blob/master/imgs/Employer_Turnover_by_Work_accident.png)
 
-![promotion-last-5](Employer_Turnover_by_promotion_last_5years.png)
+![promotion-last-5](https://github.com/isaacramiez00/predicting_turnover/blob/master/imgs/Employer_Turnover_by_promotion_last_5years.png)
 
-![department](Employer_Turnover_by_Department.png)
+![department](https://github.com/isaacramiez00/predicting_turnover/blob/master/imgs/Employer_Turnover_by_Department.png)
 
-![salary](Employer_Turnover_by_Salary_rank.png)
+![salary](https://github.com/isaacramiez00/predicting_turnover/blob/master/imgs/Employer_Turnover_by_Salary_rank.png)
 
 # Model
 
-For my model tried a variety of models, logisticRegression, pca, decision tree and random forest.
-I found that the random forest model works the best 
+My data was a classifier model.
+
+For my model tried a variety of models, logisticRegression, pca, decision tree and random forest classifier.
+I found that the Random Forest Classifier model works the best.
 
 ### Metric Used
+
 At first I was using accuracy as metric but then found recall to be the best option.
 Because our main objective is to minimize false negative (type II error) - 
 Prediciting an employee would stay (and not do anything about it) but in reality
 they left, thus loss time and money.
 
+Goal: To have a the highest Recall Score value
+
 ### First Run
-Recall-Score = 0.96
+Recall-Score = 0.96 
+
 
 ### Suspicion of Data Leakage
 
 After running my first Recall Score, I became skeptic there may be data leakage. Long Story Short,
 I tried stripping out different Feature Imporances.
 
-![feat-imp](perc_by_feat_imp.png)
+![feat-imp](https://github.com/isaacramiez00/predicting_turnover/blob/master/imgs/perc_by_feat_imp.png)
 
 Next, I ran the recall scores.
 
 Lastly, I checked for duplicates in my data.
 I found 20% to be duplicated, dropping my dataset to [11991 rows x 9 columns]
 
-![recall-scores-plt](Recall_b_a_data_leakage.png)
+![recall-scores-plt](https://github.com/isaacramiez00/predicting_turnover/blob/master/imgs/Recall_b_a_data_leakage.png)
 
 
 # Conclusion
 
-In conclusion, my random forest classifier model was performing very
+In conclusion, my Random Forest Classifier model was performing very
 well which lead suspicion there was data leakage due to duplicates in my dataset.
 After fixing the error, I was still proud of my models recall score performance of 90%.
 
@@ -126,13 +120,13 @@ As a reminder, I used all 9 features on my model. The top 2 indicators based on 
 
 ### In the Future
 
-In the future, I would like to create a profit curve
+In the future, I would like to create a profit curve.
 
-Create Partial Dependence Plots
+Create Partial Dependence Plots.
 
-Check if number of projects and avergage monthly hours are colinear
+Check if number of projects and avergage monthly hours are colinear.
 
 
 # References
-https://www.peoplekeep.com/blog/bid/312123/employee-retention-the-real-cost-of-losing-an-employee 
-
+Merhar, Christina. “Employee Retention - The Real Cost of Losing an Employee: 2019.”
+PeopleKeep, www.peoplekeep.com/blog/bid/312123/Employee-Retention-The-Real-Cost-of-Losing-an-Employee.
