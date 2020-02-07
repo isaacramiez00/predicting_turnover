@@ -242,9 +242,7 @@ if __name__=='__main__':
     rfc.fit(X_train, y_train)
     y_pred = rfc.predict(X_test)
 
-    features = list(turnover.columns)
-    feat_dict = {k: v for k, v in zip(features, rfc.feature_importances_)}
-    print(feat_dict)
+
     # print(f'data-leak-feature: {data_leakage_feature}')
     
     recall_before_drop = recall_score(y_test, y_pred)
@@ -281,6 +279,50 @@ if __name__=='__main__':
     recall_after_drop = recall_score(y_test, y_pred)
     print(f'recall-score after leakage: {round(recall_after_drop,2)}')
 
+    recall_scores_arr = np.array([recall_before_drop, recall_after_drop])
+
+    labels = ['Recall Before', 'Recall After']
+    data = recall_scores_arr
+    N = len(recall_scores_arr)
     fig, ax = plt.subplots(figsize=(8,5))
-    pass
+    width = 0.8
+    tickLocations = np.arange(N)
+    ax.bar(tickLocations, data, width, linewidth=3.0, align='center')
+    ax.set_xticks(ticks=tickLocations)
+    ax.set_xticklabels(labels)
+    ax.set_xlim(min(tickLocations)-0.6,\
+                max(tickLocations)+0.6)
+    ax.set_xlabel('Recall Scores')
+    ax.set_ylabel('Percentage')
+    ax.set_yticks(np.linspace(0,1,6))
+    ax.yaxis.grid(True)
+    ax.set_title('Recall Scores Before and After Data Leakage Exposed')
+    fig.tight_layout(pad=1)
+    plt.savefig('Recall_b_a_data_leakage.png')
+    # plt.show()
+
+    ## feature importance barplots
+    features = list(turnover.columns)
+    feat_dict = {k: v for k, v in zip(features, rfc.feature_importances_)}
+    # print(feat_dict)
+    # breakpoint()
+    imp_feat_df = pd.DataFrame([feat_dict])
+    imp_feat_df.sort_values(by=0, axis=1, inplace=True)  
     
+    labels = list(imp_feat_df.columns)
+    data = imp_feat_df.values
+    data = data.flatten()
+    y = np.arange(data.shape[0])
+
+    width = 0.8
+    fig, ax = plt.subplots(figsize=(8,5))
+    ax.barh(y, data, width, align='center')
+    ax.set_yticks(y)
+    ax.set_yticklabels(labels)
+    ax.xaxis.grid(True)
+    ax.set_ylabel('Feature Importance')
+    ax.set_xlabel('Percentage')
+    ax.set_title('Percentage by Feature Importance')
+    fig.tight_layout(pad=1)
+    plt.savefig('perc_by_feat_imp.png')
+    # plt.show()

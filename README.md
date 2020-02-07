@@ -89,45 +89,49 @@ Dataset the first 6 columns
 For my model tried a variety of models, logisticRegression, pca, decision tree and random forest.
 I found that the random forest model works the best 
 
-### metric used
+### Metric Used
 At first I was using accuracy as metric but then found recall to be the best option.
 Because our main objective is to minimize false negative (type II error) - 
 Prediciting an employee would stay (and not do anything about it) but in reality
 they left, thus loss time and money.
 
-![roc-curve]()
+### First Run
+Recall-Score = 0.96
 
+### Suspicion of Data Leakage
 
-### Data Leakage
-After Questioning my data - I found data leakage... 
-I performed feature importances
-Ran Recall scores
-Lastly, I performed duplicates 
+After running my first Recall Score, I became skeptic there may be data leakage. Long Story Short,
+I tried stripping out different Feature Imporances.
+
+![feat-imp](perc_by_feat_imp.png)
+
+Next, I ran the recall scores.
+
+Lastly, I checked for duplicates in my data.
 I found 20% to be duplicated, dropping my dataset to [11991 rows x 9 columns]
 
+![recall-scores-plt](Recall_b_a_data_leakage.png)
 
 
 # Conclusion
 
-In conclusion, there is no significant difference between urban homes and suburban homes for a house hack. We also found that
-the most common types of property for both living areas are 3 bedroom single family homes. The average purchase price for each
-home are above $550,000.
+In conclusion, my random forest classifier model was performing very
+well which lead suspicion there was data leakage due to duplicates in my dataset.
+After fixing the error, I was still proud of my models recall score performance of 90%.
 
-The average initial investment for both communities are on average above $50,000.
+As a reminder, I used all 9 features on my model. The top 2 indicators based on feature importance were:
 
-The average cashflow for a suburban home is $-14/month, Which means you would still pay $14 to for your living situation.
-The average cashlow for an urban home is $250/month.
+* Satisfaction level (percentage) 34%
+* Number of Projects (percentage) 19.5%
 
-The average NWROI for both communties is at slightly above 100% (impact the deal has on your networth).
+### In the Future
 
-#### In the Future
-In the future, I would like to answer if single family homes cash flow the most compare to the rest of property types.
+In the future, I would like to create a profit curve
 
-I'd like to bootstrap and find the median of for all analysis next time to eliminate any skewdness.
+Create Partial Dependence Plots
 
-I would also like to explore more in depth what the minumum purchase,rent, and initial investment would be to break even on house hack.
+Check if number of projects and avergage monthly hours are colinear
 
-Lastly, explore which relationship has the stongest correlation with monthly cash flow.
 
 # References
 https://www.peoplekeep.com/blog/bid/312123/employee-retention-the-real-cost-of-losing-an-employee 
