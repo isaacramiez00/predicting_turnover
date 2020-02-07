@@ -42,10 +42,12 @@ The data for this project was pulled from kaggle from [Hr Analytics](https://www
 The dataset was 14999 rows, 10 columns
 
 ![turnover-dataset-p1](https://github.com/isaacramiez00/predicting_turnover/blob/master/imgs/turnover_df_slice_1.png)
+
 Dataset the first 4 columns
 
 
 ![turnover-datset-p2](https://github.com/isaacramiez00/predicting_turnover/blob/master/imgs/turnover_df_slice_2.png)
+
 Dataset the first 6 columns
 
 
@@ -58,32 +60,40 @@ Dataset the first 6 columns
 # Exploratory Data Analysis (EDA)
 
 ![satisfaction-level](https://github.com/isaacramiez00/predicting_turnover/blob/master/imgs/satisfaction_level_percentage.png)
+
 What we ca do: Try to keep satisfaction level above 0.50
 
 ![last-eval](https://github.com/isaacramiez00/predicting_turnover/blob/master/imgs/last_evaluation_percentage.png)
+
 My Interpretation: Work performance rate
 What we can do: Check up after and see how the company can help increase work performance
 
 ![number-projects](https://github.com/isaacramiez00/predicting_turnover/blob/master/imgs/Employer_Turnover_by_number_project.png)
+
 What we can do: Keep Projects to a minimum, spread amongs employee
 
 ![avg-monthly-hours](https://github.com/isaacramiez00/predicting_turnover/blob/master/imgs/average_montly_hours.png)
+
 What we an do: Try and keep the average monthly hour between 150-250 hours (40 - 60 per week)
 
 ![time-spend-company-years](https://github.com/isaacramiez00/predicting_turnover/blob/master/imgs/Employer_Turnover_by_time_spend_company_years.png)
+
 What we can do: Encourage new type of roles within company if employee is past 5 year benchmark, (possibly boredism)
 
 ![work-accident](https://github.com/isaacramiez00/predicting_turnover/blob/master/imgs/Employer_Turnover_by_Work_accident.png)
 
 
 ![promotion-last-5](https://github.com/isaacramiez00/predicting_turnover/blob/master/imgs/Employer_Turnover_by_promotion_last_5years.png)
+
 What we can do: If we work on increasing work performance (maybe by motivating promotions) and doing so in 5 years
 
 ![department](https://github.com/isaacramiez00/predicting_turnover/blob/master/imgs/Employer_Turnover_by_Department.png)
+
 What we can do: Look into the HR department, see how business operations are doing. This
 should give valuable insight to see how other departments are operating as well because of the vary similar turnover levels.
 
 ![salary](https://github.com/isaacramiez00/predicting_turnover/blob/master/imgs/Employer_Turnover_by_Salary_rank.png)
+
 What we can do: Increase Employee salary. Who doesn't want more money?
 
 # Model
