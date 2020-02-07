@@ -157,7 +157,9 @@ In the future, I would like to create a profit curve.
 Create Partial Dependence Plots to illustrate the relationships between features and the predictions of a employee turnover.
 
 As far as answering what can Company X do to minimize employee turnover, based looking at our exploratory data
-the big two are assure satisfaction levels are good, lower number of projects, 
+the big two are assure satisfaction levels are good lower and number of projects. Other things we can do are
+promote within 5 years, check into how business operations are doing in the HR department, increase salary, keep monthly hours
+between 150-250, see how employers can help increase work performance.
 
 # References
 Merhar, Christina. “Employee Retention - The Real Cost of Losing an Employee: 2019.”
