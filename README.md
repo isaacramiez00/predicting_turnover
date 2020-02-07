@@ -37,17 +37,20 @@ What can company X do to minimize employee turnover.
 
 # The Data
 
-The data for this project was pulled from kaggle from [Hr Analytic](https://www.kaggle.com/lnvardanyan/hr-analytics)
+The data for this project was pulled from kaggle from [Hr Analytics](https://www.kaggle.com/lnvardanyan/hr-analytics)
 
 The dataset was 14999 rows, 10 columns
 
 ![turnover-dataset-p1](https://github.com/isaacramiez00/predicting_turnover/blob/master/imgs/turnover_df_slice_1.png)
 Dataset the first 4 columns
 
+
 ![turnover-datset-p2](https://github.com/isaacramiez00/predicting_turnover/blob/master/imgs/turnover_df_slice_2.png)
 Dataset the first 6 columns
 
+
 ![salary-encode](https://github.com/isaacramiez00/predicting_turnover/blob/master/imgs/salary_encoded.png)
+
 
 ![department-encode](https://github.com/isaacramiez00/predicting_turnover/blob/master/imgs/department_encoded.png)
 
@@ -56,19 +59,27 @@ Dataset the first 6 columns
 
 ![satisfaction-level](https://github.com/isaacramiez00/predicting_turnover/blob/master/imgs/satisfaction_level_percentage.png)
 
+
 ![last-eval](https://github.com/isaacramiez00/predicting_turnover/blob/master/imgs/last_evaluation_percentage.png)
+
 
 ![number-projects](https://github.com/isaacramiez00/predicting_turnover/blob/master/imgs/Employer_Turnover_by_number_project.png)
 
+
 ![avg-monthly-hours](https://github.com/isaacramiez00/predicting_turnover/blob/master/imgs/average_montly_hours.png)
+
 
 ![time-spend-company-years](https://github.com/isaacramiez00/predicting_turnover/blob/master/imgs/Employer_Turnover_by_time_spend_company_years.png)
 
+
 ![work-accident](https://github.com/isaacramiez00/predicting_turnover/blob/master/imgs/Employer_Turnover_by_Work_accident.png)
+
 
 ![promotion-last-5](https://github.com/isaacramiez00/predicting_turnover/blob/master/imgs/Employer_Turnover_by_promotion_last_5years.png)
 
+
 ![department](https://github.com/isaacramiez00/predicting_turnover/blob/master/imgs/Employer_Turnover_by_Department.png)
+
 
 ![salary](https://github.com/isaacramiez00/predicting_turnover/blob/master/imgs/Employer_Turnover_by_Salary_rank.png)
 
@@ -104,6 +115,14 @@ Next, I ran the recall scores.
 Lastly, I checked for duplicates in my data.
 I found 20% to be duplicated, dropping my dataset to [11991 rows x 9 columns]
 
+I reran the recall scores per feature importance and found none were a significant impact.
+
+![recall-feat-p1](recall_feat_p1.png)
+
+
+![recall-feat-p2](recall_feat_p1.png)
+
+
 ![recall-scores-plt](https://github.com/isaacramiez00/predicting_turnover/blob/master/imgs/Recall_b_a_data_leakage.png)
 
 
@@ -122,7 +141,7 @@ As a reminder, I used all 9 features on my model. The top 2 indicators based on 
 
 In the future, I would like to create a profit curve.
 
-Create Partial Dependence Plots.
+Create Partial Dependence Plots to see how features chang
 
 Check if number of projects and avergage monthly hours are colinear.
 

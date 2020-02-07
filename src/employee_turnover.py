@@ -8,6 +8,9 @@ from sklearn import tree
 import numpy as np
 from sklearn.metrics import recall_score
 
+'''
+To whoever looks at this, I apoligize in advance for the terrible code... forgive me
+'''
 
 def plot_histograms():
 
@@ -56,18 +59,22 @@ def create_cat_percentage_df():
 
 def plot_ROC_curve():
     # random forest model w recall score metric
+
+    turnover.drop_duplicates(keep='first', inplace=True)
     rfc = RandomForestClassifier()
     y = turnover.pop('left').values
     X = turnover.values
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
 
     ## data leakage problem
+    recall_feature_leakage = {}
 
     for idx in range(len(turnover.columns)):
         # breakpoint()
         features = list(turnover.columns)
         data_leakage_feature = features.pop(idx)
         X = turnover[features]
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
         rfc.fit(X_train, y_train)
         y_pred = rfc.predict(X_test)
 
@@ -77,24 +84,28 @@ def plot_ROC_curve():
         
         recall = recall_score(y_test, y_pred)
         print(f'recall-score: {round(recall,2)}')
-          
+        recall_feature_leakage[data_leakage_feature] = recall
+    
+    print(X.shape)
 
-        print(confusion_matrix(y_test, y_pred))
+    return recall_feature_leakage
+
+        # print(confusion_matrix(y_test, y_pred))
         
         ## roc curve
-        fpr, tpr, thresholds = roc_curve(y_test, y_pred, pos_label=1)
-        auc_ = auc(fpr, tpr)
+        # fpr, tpr, thresholds = roc_curve(y_test, y_pred, pos_label=1)
+        # auc_ = auc(fpr, tpr)
 
-        fig, ax = plt.subplots(figsize=(8,5))
+        # fig, ax = plt.subplots(figsize=(8,5))
 
-        # roc curve plot
-        ax.plot([0, 1], [0, 1], 'k--')
-        ax.plot(fpr, tpr, label=f'RFC Recall Score= {round(recall,2)}')
-        ax.set_xlabel('False positive rate')
-        ax.set_ylabel('True positive rate')
-        ax.set_title(f'ROC curve With Out {data_leakage_feature} Feature')
-        ax.legend(loc='best')    
-        plt.savefig(f'ROC_Curve_Wout_{data_leakage_feature}_feature.png')
+        # # roc curve plot
+        # ax.plot([0, 1], [0, 1], 'k--')
+        # ax.plot(fpr, tpr, label=f'RFC Recall Score= {round(recall,2)}')
+        # ax.set_xlabel('False positive rate')
+        # ax.set_ylabel('True positive rate')
+        # ax.set_title(f'ROC curve With Out {data_leakage_feature} Feature')
+        # ax.legend(loc='best')    
+        # plt.savefig(f'ROC_Curve_Wout_{data_leakage_feature}_feature.png')
 
 
 
@@ -270,35 +281,35 @@ if __name__=='__main__':
     turnover["department"] = turnover["department"].astype('category').cat.reorder_categories(department_col).cat.codes
     # after dropping data leakage
     turnover.drop_duplicates(keep='first', inplace=True)
-    y = turnover.pop('left').values
-    X = turnover.values
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-    rfc.fit(X_train, y_train)
-    y_pred = rfc.predict(X_test)
+    # y = turnover.pop('left').values
+    # X = turnover.values
+    # X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    # rfc.fit(X_train, y_train)
+    # y_pred = rfc.predict(X_test)
     
-    recall_after_drop = recall_score(y_test, y_pred)
-    print(f'recall-score after leakage: {round(recall_after_drop,2)}')
+    # recall_after_drop = recall_score(y_test, y_pred)
+    # print(f'recall-score after leakage: {round(recall_after_drop,2)}')
 
-    recall_scores_arr = np.array([recall_before_drop, recall_after_drop])
+    # recall_scores_arr = np.array([recall_before_drop, recall_after_drop])
 
-    labels = ['Recall Before', 'Recall After']
-    data = recall_scores_arr
-    N = len(recall_scores_arr)
-    fig, ax = plt.subplots(figsize=(8,5))
-    width = 0.8
-    tickLocations = np.arange(N)
-    ax.bar(tickLocations, data, width, linewidth=3.0, align='center')
-    ax.set_xticks(ticks=tickLocations)
-    ax.set_xticklabels(labels)
-    ax.set_xlim(min(tickLocations)-0.6,\
-                max(tickLocations)+0.6)
-    ax.set_xlabel('Recall Scores')
-    ax.set_ylabel('Percentage')
-    ax.set_yticks(np.linspace(0,1,6))
-    ax.yaxis.grid(True)
-    ax.set_title('Recall Scores Before and After Data Leakage Exposed')
-    fig.tight_layout(pad=1)
-    plt.savefig('Recall_b_a_data_leakage.png')
+    # labels = ['Recall Before', 'Recall After']
+    # data = recall_scores_arr
+    # N = len(recall_scores_arr)
+    # fig, ax = plt.subplots(figsize=(8,5))
+    # width = 0.8
+    # tickLocations = np.arange(N)
+    # ax.bar(tickLocations, data, width, linewidth=3.0, align='center')
+    # ax.set_xticks(ticks=tickLocations)
+    # ax.set_xticklabels(labels)
+    # ax.set_xlim(min(tickLocations)-0.6,\
+    #             max(tickLocations)+0.6)
+    # ax.set_xlabel('Recall Scores')
+    # ax.set_ylabel('Percentage')
+    # ax.set_yticks(np.linspace(0,1,6))
+    # ax.yaxis.grid(True)
+    # ax.set_title('Recall Scores Before and After Data Leakage Exposed')
+    # fig.tight_layout(pad=1)
+    # plt.savefig('Recall_b_a_data_leakage.png')
     # plt.show()
 
     ## feature importance barplots
@@ -326,3 +337,6 @@ if __name__=='__main__':
     fig.tight_layout(pad=1)
     plt.savefig('perc_by_feat_imp.png')
     # plt.show()
+
+    recall_feature_leakage = plot_ROC_curve()
+    recall_feature_df = pd.DataFrame([recall_feature_leakage])
