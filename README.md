@@ -5,7 +5,7 @@
 2. [Project Questions/Goal](#project-questions/goals)
 3. [Data](#the-data)
 4. [Exporatory Data Analysis (EDA)](#exploratory-data-analysis-(eda))
-5. [model](#analysis)
+5. [model](#model)
 6. [Conclusion](#conclusion)
 7. [References](#references)
 
