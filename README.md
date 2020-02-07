@@ -157,9 +157,11 @@ between 150-250, see how employers can help increase work performance.
 
 ### In the Future
 
-In the future, I would like to create a profit curve.
+In the future, I would like to create a profit curve to display the costs of employee turnover.
 
 Create Partial Dependence Plots to illustrate the relationships between features and the predictions of a employee turnover.
+
+Have a test script written out for Frank.
 
 
 # References
