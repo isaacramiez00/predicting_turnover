@@ -117,10 +117,10 @@ I found 20% to be duplicated, dropping my dataset to [11991 rows x 9 columns]
 
 I reran the recall scores per feature importance and found none were a significant impact.
 
-![recall-feat-p1](recall_feat_p1.png)
+![recall-feat-p1](https://github.com/isaacramiez00/predicting_turnover/blob/master/imgs/recall_feat_p1.png)
 
 
-![recall-feat-p2](recall_feat_p1.png)
+![recall-feat-p2](https://github.com/isaacramiez00/predicting_turnover/blob/master/imgs/recall_feat_p2.png)
 
 
 ![recall-scores-plt](https://github.com/isaacramiez00/predicting_turnover/blob/master/imgs/Recall_b_a_data_leakage.png)
