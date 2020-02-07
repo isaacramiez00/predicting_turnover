@@ -141,9 +141,7 @@ As a reminder, I used all 9 features on my model. The top 2 indicators based on 
 
 In the future, I would like to create a profit curve.
 
-Create Partial Dependence Plots to see how features chang
-
-Check if number of projects and avergage monthly hours are colinear.
+Create Partial Dependence Plots to illustrate the relationships between features and the predictions of a employee turnover.
 
 
 # References
