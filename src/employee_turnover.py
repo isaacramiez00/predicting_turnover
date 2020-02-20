@@ -258,8 +258,18 @@ if __name__=='__main__':
     
     recall_before_drop = recall_score(y_test, y_pred)
     print(f'recall-score before leakage: {round(recall_before_drop,2)}')
-    
 
+
+
+
+
+
+    
+    #######################################THIS IS AFTER EXPOSING DUPLICATES################################################### 
+    
+    
+    
+    
     turnover = pd.read_csv("../data/turnover.csv")
     salary = turnover['salary'].value_counts()
     salary_col = list(salary.index)
@@ -279,16 +289,36 @@ if __name__=='__main__':
     department = turnover.department.value_counts()
     department_col = list(department.index)
     turnover["department"] = turnover["department"].astype('category').cat.reorder_categories(department_col).cat.codes
+
+    
+  
     # after dropping data leakage
     turnover.drop_duplicates(keep='first', inplace=True)
-    # y = turnover.pop('left').values
-    # X = turnover.values
-    # X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-    # rfc.fit(X_train, y_train)
-    # y_pred = rfc.predict(X_test)
+
+    # set cleaned dataset to csv file
+    turnover.to_csv('../data/cleanedturnover.csv')
+    # turnover percent ratio  
+    print(len(turnover))
+    print(len(turnover[turnover['left']==1]))
+    turnover_perc_ratio = turnover['left'].value_counts()/len(turnover)*100
+    print(f'turnover percent ratio: \n {turnover_perc_ratio}')
     
-    # recall_after_drop = recall_score(y_test, y_pred)
-    # print(f'recall-score after leakage: {round(recall_after_drop,2)}')
+
+    y = turnover.pop('left').values
+    X = turnover.values
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    rfc.fit(X_train, y_train)
+    y_pred = rfc.predict(X_test)
+
+
+    
+    recall_after_drop = recall_score(y_test, y_pred)
+    print(f'recall-score after leakage: {round(recall_after_drop,2)}')
+
+    con_mat = confusion_matrix(y_test, y_pred)
+    tn, fp, fn, tp = con_mat.ravel()
+    print(f'tn: {tn}\n fp: {fp}\n fn: {fn}\n tp: {tp}')
+    print(f'''Confusion matrix after leakage: \n {con_mat}''')
 
     # recall_scores_arr = np.array([recall_before_drop, recall_after_drop])
 
@@ -338,5 +368,5 @@ if __name__=='__main__':
     plt.savefig('perc_by_feat_imp.png')
     # plt.show()
 
-    recall_feature_leakage = plot_ROC_curve()
-    recall_feature_df = pd.DataFrame([recall_feature_leakage])
+    # recall_feature_leakage = plot_ROC_curve()
+    # recall_feature_df = pd.DataFrame([recall_feature_leakage])
