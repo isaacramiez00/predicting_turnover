@@ -89,12 +89,12 @@ What we can do: Encourage new type of roles within company if employee is past 5
 
 What we can do: If we work on increasing work performance (maybe by motivating promotions) and doing so in 5 years
 
-![department](https://github.com/isaacramiez00/predicting_turnover/blob/master/imgs/Employer_Turnover_by_Department_side_barcharts.png)
+![department](https://github.com/isaacramiez00/predicting_turnover/blob/master/imgs/Employer_Turnover_by_department_side_barcharts.png)
 
 What we can do: Look into the HR department, see how business operations are doing. This
 should give valuable insight to see how other departments are operating as well because of the vary similar turnover levels.
 
-![salary](https://github.com/isaacramiez00/predicting_turnover/blob/master/imgs/Employer_Turnover_by_Salary_rank_side_barcharts.png)
+![salary](https://github.com/isaacramiez00/predicting_turnover/blob/master/imgs/Employer_Turnover_by_salary_side_barcharts.png)
 
 What we can do: Increase Employee salary. Who doesn't want more money?
 
