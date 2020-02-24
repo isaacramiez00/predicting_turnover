@@ -27,6 +27,7 @@ def plot_histograms():
         fig.tight_layout(pad=2)
         plt.savefig(f'{feat}.png')
 
+
 def create_cat_percentage_df():
 
     left_df = turnover[turnover['left']==1]
@@ -36,24 +37,35 @@ def create_cat_percentage_df():
                    'Work_accident', 'promotion_last_5years', 'department', 'salary']
 
     for cat in cat_feature:
-        left_df = left_df[cat_feature]
-        stayed_df = stayed_df[cat_feature]
+        
+        # left_df = left_df[cat_feature]
+        # stayed_df = stayed_df[cat_feature]
 
         # initiating the dataframe
         current = turnover[cat].value_counts()
-        current_col = list(current.index)
-        current_code = turnover[cat].value_counts()
-        current_code_col = list(current_code.index)
-
-        current_dict = {f'{cat}': current_col, 'code': current_code_col} # data for new dataframe
+        current.sort_index(inplace=True)
+        # current_col = list(current.index)
+        # current_code = turnover[cat].value_counts()
+        # current_code.sort_index(inplace=True)
+        # current_code_col = list(current_code.index)
+        breakpoint()
+        current_dict = {f'{cat}': list(current.index), 'total_count': current.values} # data for new dataframe
         current_df = pd.DataFrame(data=current_dict)
 
         # adding percentage convergance
-        current_df['left'] = left_df[cat].value_counts()
-        current_df['stayed'] = stayed_df[cat].value_counts()
-        current_df['total_count'] = turnover[cat].value_counts()
+        lefted = left_df[cat].value_counts()
+        lefted.sort_index(inplace=True)
+        current_df['left'] = lefted.values
+
+        stayed = stayed_df[cat].value_counts()
+        stayed.sort_index(inplace=True)
+        stayed.values.tolist()
+        stayed.append(None)
+        current_df['stayed'] = stayed
+
         current_df['left_percentage'] = current_df['left'] / current_df['total_count']
-        current_df.sort_values(by='left_percentage', axis=0, inplace=True)
+        # breakpoint()
+        # current_df.sort_values(by=cat, axis=0, inplace=True)
 
         plot_side_by_side_percentage_barcharts(current_df)
 
@@ -134,10 +146,12 @@ def plot_side_by_side_percentage_barcharts(df):
 
 if __name__=='__main__':
     # cleaning data 
+    # breakpoint()
+
     turnover = pd.read_csv("../data/turnover.csv")
     salary = turnover['salary'].value_counts()
     salary_col = list(salary.index)
-    turnover["salary"] = turnover["salary"].astype('category').cat.reorder_categories(salary_col).cat.codes
+    # turnover["salary"] = turnover["salary"].astype('category').cat.reorder_categories(salary_col).cat.codes I DID THIS FOR THE CORRMATRIX
     salary_code = turnover.salary.value_counts()
     salary_code_col = list(salary_code.index)
 
@@ -149,10 +163,9 @@ if __name__=='__main__':
                     'time_spend_company': 'time_spend_company_years',\
                     'sales': 'department'}
     turnover.rename(columns=rename_columns, inplace=True)
-
     department = turnover.department.value_counts()
     department_col = list(department.index)
-    turnover["department"] = turnover["department"].astype('category').cat.reorder_categories(department_col).cat.codes
+    # turnover["department"] = turnover["department"].astype('category').cat.reorder_categories(department_col).cat.codes I DID THIS FOR CORRMATRIX
     # department = pd.get_dummies(turnover["department"])
     # turnover = turnover.drop(["department"], axis=1)
     department_code = turnover.department.value_counts()
@@ -160,11 +173,11 @@ if __name__=='__main__':
 
     department_dict = {'department': department_col, 'code': department_code_col}
     department_df = pd.DataFrame(data=department_dict) # use for eda
-
+    # breakpoint()
     # Data Visualization
-    '''
     create_cat_percentage_df()
-
+    
+    '''
     ## correlation matrix
     fig, ax = plt.subplots(figsize=(9,6))
     ax = sns.heatmap(turnover.corr())
@@ -343,29 +356,29 @@ if __name__=='__main__':
     # plt.show()
 
     ## feature importance barplots
-    features = list(turnover.columns)
-    feat_dict = {k: v for k, v in zip(features, rfc.feature_importances_)}
-    # print(feat_dict)
-    # breakpoint()
-    imp_feat_df = pd.DataFrame([feat_dict])
-    imp_feat_df.sort_values(by=0, axis=1, inplace=True)  
+    # features = list(turnover.columns)
+    # feat_dict = {k: v for k, v in zip(features, rfc.feature_importances_)}
+    # # print(feat_dict)
+    # # breakpoint()
+    # imp_feat_df = pd.DataFrame([feat_dict])
+    # imp_feat_df.sort_values(by=0, axis=1, inplace=True)  
     
-    labels = list(imp_feat_df.columns)
-    data = imp_feat_df.values
-    data = data.flatten()
-    y = np.arange(data.shape[0])
+    # labels = list(imp_feat_df.columns)
+    # data = imp_feat_df.values
+    # data = data.flatten()
+    # y = np.arange(data.shape[0])
 
-    width = 0.8
-    fig, ax = plt.subplots(figsize=(8,5))
-    ax.barh(y, data, width, align='center')
-    ax.set_yticks(y)
-    ax.set_yticklabels(labels)
-    ax.xaxis.grid(True)
-    ax.set_ylabel('Feature Importance')
-    ax.set_xlabel('Percentage')
-    ax.set_title('Percentage by Feature Importance')
-    fig.tight_layout(pad=1)
-    plt.savefig('perc_by_feat_imp.png')
+    # width = 0.8
+    # fig, ax = plt.subplots(figsize=(8,5))
+    # ax.barh(y, data, width, align='center')
+    # ax.set_yticks(y)
+    # ax.set_yticklabels(labels)
+    # ax.xaxis.grid(True)
+    # ax.set_ylabel('Feature Importance')
+    # ax.set_xlabel('Percentage')
+    # ax.set_title('Percentage by Feature Importance')
+    # fig.tight_layout(pad=1)
+    # plt.savefig('perc_by_feat_imp.png')
     # plt.show()
 
     # recall_feature_leakage = plot_ROC_curve()
