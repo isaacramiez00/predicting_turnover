@@ -15,6 +15,8 @@ To whoever looks at this, I apoligize in advance for the terrible code... forgiv
 
 def plot_histograms():
 
+    left_df = turnover[turnover['left']==1]
+    stayed_df = turnover[turnover['left']==0]
     continous_features = ['satisfaction_level_percentage','last_evaluation_percentage','average_montly_hours']
     
     for feat in continous_features:
@@ -26,7 +28,7 @@ def plot_histograms():
         ax.set_ylabel('Frequency Count')
         plt.legend(loc='best')
         fig.tight_layout(pad=2)
-        plt.savefig(f'{feat}.png')
+        plt.savefig(f'{feat}_new_style.png')
 
 
 def create_cat_percentage_df():
@@ -174,8 +176,8 @@ if __name__=='__main__':
     department_df = pd.DataFrame(data=department_dict) # use for eda
     # breakpoint()
     # Data Visualization
-    create_cat_percentage_df()
-    plt.show()
+    # create_cat_percentage_df()
+    # plt.show()
     '''
     ## correlation matrix
     fig, ax = plt.subplots(figsize=(9,6))
@@ -248,6 +250,8 @@ if __name__=='__main__':
     plot_histograms()
     # plt.show()
     '''
+    plot_histograms()
+    plt.show()
     # plot_ROC_curve()
 
     # plotting fixing recall score
