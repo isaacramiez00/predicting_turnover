@@ -59,16 +59,16 @@ Dataset the first 6 columns
 
 # Exploratory Data Analysis (EDA)
 
-![satisfaction-level](https://github.com/isaacramiez00/predicting_turnover/blob/master/imgs/satisfaction_level_percentage.png)
+![satisfaction-level](https://github.com/isaacramiez00/predicting_turnover/blob/master/imgs/satisfaction_level_percentage_new_style.png)
 
 What we ca do: Try to keep satisfaction level above 0.50
 
-![last-eval](https://github.com/isaacramiez00/predicting_turnover/blob/master/imgs/last_evaluation_percentage.png)
+![last-eval](https://github.com/isaacramiez00/predicting_turnover/blob/master/imgs/last_evaluation_percentage_new_style.png)
 
 
 What we can do: Keep Projects to a minimum, spread amongs employee
 
-![avg-monthly-hours](https://github.com/isaacramiez00/predicting_turnover/blob/master/imgs/average_montly_hours.png)
+![avg-monthly-hours](https://github.com/isaacramiez00/predicting_turnover/blob/master/imgs/average_montly_hours_new_style.png)
 
 My Interpretation: Work performance rate
 What we can do: Check up after and see how the company can help increase work performance
