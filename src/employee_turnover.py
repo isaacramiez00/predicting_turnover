@@ -37,36 +37,35 @@ def create_cat_percentage_df():
                    'Work_accident', 'promotion_last_5years', 'department', 'salary']
 
     for cat in cat_feature:
-        
-        # left_df = left_df[cat_feature]
-        # stayed_df = stayed_df[cat_feature]
 
         # initiating the dataframe
         current = turnover[cat].value_counts()
         current.sort_index(inplace=True)
-        # current_col = list(current.index)
-        # current_code = turnover[cat].value_counts()
-        # current_code.sort_index(inplace=True)
-        # current_code_col = list(current_code.index)
-        breakpoint()
+
         current_dict = {f'{cat}': list(current.index), 'total_count': current.values} # data for new dataframe
         current_df = pd.DataFrame(data=current_dict)
 
         # adding percentage convergance
-        lefted = left_df[cat].value_counts()
-        lefted.sort_index(inplace=True)
-        current_df['left'] = lefted.values
+        left = left_df[cat].value_counts()
+        left.sort_index(inplace=True)
+        left = left.values.tolist()
+        breakpoint()
+        try:
+            current_df['left'] = left
+        except:
+            while len(left) < current_df.shape[0]:
+                left.append(None)
 
         stayed = stayed_df[cat].value_counts()
         stayed.sort_index(inplace=True)
-        stayed.values.tolist()
-        stayed.append(None)
-        current_df['stayed'] = stayed
-
+        stayed = stayed.values.tolist()
+        try:
+            current_df['stayed'] = stayed
+        except:
+            while len(stayed) < current_df.shape[0]:
+                stayed.append(None)
+        
         current_df['left_percentage'] = current_df['left'] / current_df['total_count']
-        # breakpoint()
-        # current_df.sort_values(by=cat, axis=0, inplace=True)
-
         plot_side_by_side_percentage_barcharts(current_df)
 
 def plot_ROC_curve():
