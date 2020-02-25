@@ -99,28 +99,25 @@ def plot_ROC_curve():
         print(f'recall-score: {round(recall,2)}')
         recall_feature_leakage[data_leakage_feature] = recall
     
-    print(X.shape)
+        print(X.shape)
 
-    return recall_feature_leakage
-
-        # print(confusion_matrix(y_test, y_pred))
+        print(confusion_matrix(y_test, y_pred))
         
-        ## roc curve
-        # fpr, tpr, thresholds = roc_curve(y_test, y_pred, pos_label=1)
-        # auc_ = auc(fpr, tpr)
+        # roc curve
+        fpr, tpr, thresholds = roc_curve(y_test, y_pred, pos_label=1)
+        auc_ = auc(fpr, tpr)
 
-        # fig, ax = plt.subplots(figsize=(8,5))
+        fig, ax = plt.subplots(figsize=(8,5))
 
-        # # roc curve plot
-        # ax.plot([0, 1], [0, 1], 'k--')
-        # ax.plot(fpr, tpr, label=f'RFC Recall Score= {round(recall,2)}')
-        # ax.set_xlabel('False positive rate')
-        # ax.set_ylabel('True positive rate')
-        # ax.set_title(f'ROC curve With Out {data_leakage_feature} Feature')
-        # ax.legend(loc='best')    
-        # plt.savefig(f'ROC_Curve_Wout_{data_leakage_feature}_feature.png')
-
-
+        # roc curve plot
+        ax.plot([0, 1], [0, 1], 'k--')
+        ax.plot(fpr, tpr, label=f'RFC Recall Score= {round(recall,2)}')
+        ax.set_xlabel('False positive rate')
+        ax.set_ylabel('True positive rate')
+        ax.set_title(f'ROC curve With Out {data_leakage_feature} Feature')
+        ax.legend(loc='best')    
+        plt.savefig(f'ROC_Curve_Wout_{data_leakage_feature}_feature.png')
+        pass
 
 def plot_side_by_side_percentage_barcharts(df, column):
  
@@ -145,244 +142,165 @@ def plot_side_by_side_percentage_barcharts(df, column):
     plt.savefig(f'Employer_Turnover_by_{column}_side_barcharts.png')
 
 
-if __name__=='__main__':
-    # cleaning data 
-    # breakpoint()
+def load_n_clean_data(filepath):
+    '''
+    loads and renames (cleans) the columns
+    for the turnover file
+    '''
 
-    turnover = pd.read_csv("../data/turnover.csv")
-    salary = turnover['salary'].value_counts()
-    salary_col = list(salary.index)
-    # turnover["salary"] = turnover["salary"].astype('category').cat.reorder_categories(salary_col).cat.codes I DID THIS FOR THE CORRMATRIX
-    salary_code = turnover.salary.value_counts()
-    salary_code_col = list(salary_code.index)
-
-    salary_dict = {'salary': salary_col, 'code': salary_code_col}
-    salary_df = pd.DataFrame(data=salary_dict) # use for eda
-
+    df = pd.read_csv(filepath)
     rename_columns = {'satisfaction_level': 'satisfaction_level_percentage',\
                     'last_evaluation': 'last_evaluation_percentage',\
                     'time_spend_company': 'time_spend_company_years',\
                     'sales': 'department'}
-    turnover.rename(columns=rename_columns, inplace=True)
-    department = turnover.department.value_counts()
-    department_col = list(department.index)
-    # turnover["department"] = turnover["department"].astype('category').cat.reorder_categories(department_col).cat.codes I DID THIS FOR CORRMATRIX
-    # department = pd.get_dummies(turnover["department"])
-    # turnover = turnover.drop(["department"], axis=1)
-    department_code = turnover.department.value_counts()
-    department_code_col = list(department_code.index)
+    df.rename(columns=rename_columns, inplace=True)
+    return df
 
-    department_dict = {'department': department_col, 'code': department_code_col}
-    department_df = pd.DataFrame(data=department_dict) # use for eda
-    # breakpoint()
-    # Data Visualization
-    # create_cat_percentage_df()
-    # plt.show()
+
+def plot_corr_matrix(df):
     '''
-    ## correlation matrix
-    fig, ax = plt.subplots(figsize=(9,6))
-    ax = sns.heatmap(turnover.corr())
-    plt.savefig('correlation_matrix.png')
+    plots correlation matrix to
+    find correlation among columns
+    in turnover dataset
+    '''
+
+    salary = df['salary'].unique()
+    # salary_col = list(salary.index)
+    df["salary"] = df["salary"].astype('category').cat.reorder_categories(salary).cat.codes
+
+    department = list(df['department'].unique())
+    # department_col = list(department.index)
+    df["department"] = df["department"].astype('category').cat.reorder_categories(department).cat.codes
+
+    fig, ax = plt.subplots(figsize=(12,8))
+    ax = sns.heatmap(df.corr())
     plt.tight_layout(pad=4)
+    plt.savefig('correlation_matrix_newest.png')
 
-    ## department eda deepdive
-    left_df = turnover[turnover['left']==1]
-    department_df['left'] = left_df['department'].value_counts()
-
-    stayed_df = turnover[turnover['left']==0]
-    department_df['stayed'] = stayed_df['department'].value_counts()
-
-    department_df['total_count'] = turnover['department'].value_counts()
-    department_df['left_percentage'] = department_df['left'] / department_df['total_count']
-    department_df.sort_values(by='left_percentage', axis=0, inplace=True)
-
-    labels = department_df['department']
-    data = department_df['left_percentage']
-    N = 10
-    fig, ax = plt.subplots(figsize=(8,5))
-    width = 0.8
-    tickLocations = np.arange(N)
-    ax.bar(tickLocations, data, width, linewidth=3.0, align='center')
-    ax.set_xticks(ticks=tickLocations)
-    ax.set_xticklabels(labels)
-    ax.set_xlim(min(tickLocations)-0.6,\
-                max(tickLocations)+0.6)
-    ax.set_xlabel('Department')
-    ax.set_ylabel('Employee Percent Turnvover')
-    ax.set_yticks(np.linspace(0,0.5,6))
-    ax.yaxis.grid(True)
-    ax.set_title('Employer Turnover by Department')
-    fig.tight_layout(pad=1)
-    plt.savefig('Employer_Turnover_by_Department.png')
-
-    ## Salary eda deepdive
-    left_df = turnover[turnover['left']==1]
-    salary_df['left'] = left_df['salary'].value_counts()
-
-    stayed_df = turnover[turnover['left']==0]
-    salary_df['stayed'] = stayed_df['salary'].value_counts()
-
-    salary_df['total_count'] = turnover['salary'].value_counts()
-    salary_df['left_percentage'] = salary_df['left'] / salary_df['total_count']
-    salary_df.sort_values(by='left_percentage', axis=0, inplace=True)
-
-    labels = salary_df['salary']
-    data = salary_df['left_percentage']
-    N = 3
-    fig, ax = plt.subplots(figsize=(8,5))
-    width = 0.8
-    tickLocations = np.arange(N)
-    ax.bar(tickLocations, data, width, linewidth=3.0, align='center')
-    ax.set_xticks(ticks=tickLocations)
-    ax.set_xticklabels(labels)
-    ax.set_xlim(min(tickLocations)-0.6,\
-                max(tickLocations)+0.6)
-    ax.set_xlabel('Salary Ranking')
-    ax.set_ylabel('Employee Percent Turnvover')
-    ax.set_yticks(np.linspace(0,0.5,6))
-    ax.yaxis.grid(True)
-    ax.set_title('Employer Turnover by Salary Rank')
-    fig.tight_layout(pad=1)
-    plt.savefig('Employer_Turnover_by_Salary_rank.png')
-
-
-    ## continous-histograms
-    plot_histograms()
-    # plt.show()
+def plot_data_visualizations(df):
     '''
+    plots all turnover eda
+    and model evaluations
+    '''
+
+    create_cat_percentage_df() # edit
     plot_histograms()
-    plt.show()
+    plot_ROC_curve()
+    plot_percentage_comparison(df)
+    # STILL NEED TO UPDATE ROC CURVE, PROFIT CURVE, PARTIAL DEPEDENDENCE, CONFUSION MATRIX, TEST/TRAIN VAL SCORES
+    pass 
+
+def run_rfc_model(drop_duplicates=False):
+    '''
+    runs the rfc model and returns recall score.
+    Paramater gives user the option to drop duplicates
+    found in the data to compare scores.
+    '''
+    if drop_duplicates:
+        df.drop_duplicates(keep='first', inplace=True)
+
+    rfc = RandomForestClassifier()
+    y = df.pop('left').values
+    X = df.values
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    rfc.fit(X_train, y_train)
+    y_pred = rfc.predict(X_test)
+
+    recall_before_drop = recall_score(y_test, y_pred)
+    return f'recall-score before leakage: {round(recall_before_drop,2)}'
+
+def run_all_models():
+    '''
+    runs all models that were tested
+    and returns recall score.
+    '''
+    pass
+
+def plot_percentage_comparison(df):
+    '''
+    simple bar plot returning the turnover ratio
+    '''
+    df['left_percentage'] = df['left'].value_counts()/ len(df)
+    df['stayed_percentage'] = 1 - df['left_percentage']
+
+    # simple bar plot to compare ratio
+    pass
+
+def plot_confusion_matrix():
+    '''
+    plot confusion matrix
+    '''
+
+    con_mat = confusion_matrix(y_test, y_pred)
+    tn, fp, fn, tp = con_mat.ravel()
+    print(f'tn: {tn}\n fp: {fp}\n fn: {fn}\n tp: {tp}')
+    print(f'''Confusion matrix after leakage: \n {con_mat}''')
+    # create plot
+    pass
+
+def plot_feat_importances():
+    '''
+    plots feature importance of rfc model
+    '''
+
+    features = list(turnover.columns)
+    feat_dict = {k: v for k, v in zip(features, rfc.feature_importances_)}
+
+    imp_feat_df = pd.DataFrame([feat_dict])
+    imp_feat_df.sort_values(by=0, axis=1, inplace=True)  
+    
+    labels = list(imp_feat_df.columns)
+    data = imp_feat_df.values
+    data = data.flatten()
+    y = np.arange(data.shape[0])
+
+    width = 0.8
+    fig, ax = plt.subplots(figsize=(8,5))
+    ax.barh(y, data, width, align='center')
+    ax.set_yticks(y)
+    ax.set_yticklabels(labels)
+    ax.xaxis.grid(True)
+    ax.set_ylabel('Feature Importance')
+    ax.set_xlabel('Percentage')
+    ax.set_title('Percentage by Feature Importance')
+    fig.tight_layout(pad=1)
+    plt.savefig('perc_by_feat_imp.png')
+
+def plot recall_scores():
+    '''
+    plots recall scores in bar chart
+    '''
+
+    recall_scores_arr = np.array([recall_before_drop, recall_after_drop])
+
+    labels = ['Recall Before', 'Recall After']
+    data = recall_scores_arr
+    N = len(recall_scores_arr)
+    fig, ax = plt.subplots(figsize=(8,5))
+    width = 0.8
+    tickLocations = np.arange(N)
+    ax.bar(tickLocations, data, width, linewidth=3.0, align='center')
+    ax.set_xticks(ticks=tickLocations)
+    ax.set_xticklabels(labels)
+    ax.set_xlim(min(tickLocations)-0.6,\
+                max(tickLocations)+0.6)
+    ax.set_xlabel('Recall Scores')
+    ax.set_ylabel('Percentage')
+    ax.set_yticks(np.linspace(0,1,6))
+    ax.yaxis.grid(True)
+    ax.set_title('Recall Scores Before and After Data Leakage Exposed')
+    fig.tight_layout(pad=1)
+    plt.savefig('Recall_b_a_data_leakage.png')
+
+if __name__=='__main__':
+
+    turnover = load_n_clean_data('../data/turnover.csv')
+    plot_corr_matrix(turnover)
+    
+    # data visuals
+    # create_cat_percentage_df()
+    # plot_histograms()
     # plot_ROC_curve()
 
-    # plotting fixing recall score
-    # fig, ax = plt.subplots(figsize=(8,5))
-    # ax.bar()
-
-    # plt.show()
-
-    # recall score before dropping data leakage
-    # turnover.drop_duplicates(keep='first', inplace=True)
-    # rfc = RandomForestClassifier()
-    # y = turnover.pop('left').values
-    # X = turnover.values
-    # X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-    # rfc.fit(X_train, y_train)
-    # y_pred = rfc.predict(X_test)
-
-
-    # # print(f'data-leak-feature: {data_leakage_feature}')
-    
-    # recall_before_drop = recall_score(y_test, y_pred)
-    # print(f'recall-score before leakage: {round(recall_before_drop,2)}')
-
-
-
-
-
-
-    
-    #######################################THIS IS AFTER EXPOSING DUPLICATES################################################### 
-    
-    
-    
-    
-    # turnover = pd.read_csv("../data/turnover.csv")
-    # salary = turnover['salary'].value_counts()
-    # salary_col = list(salary.index)
-    # turnover["salary"] = turnover["salary"].astype('category').cat.reorder_categories(salary_col).cat.codes
-    # salary_code = turnover.salary.value_counts()
-    # salary_code_col = list(salary_code.index)
-
-    # salary_dict = {'salary': salary_col, 'code': salary_code_col}
-    # salary_df = pd.DataFrame(data=salary_dict) # use for eda
-
-    # rename_columns = {'satisfaction_level': 'satisfaction_level_percentage',\
-    #                 'last_evaluation': 'last_evaluation_percentage',\
-    #                 'time_spend_company': 'time_spend_company_years',\
-    #                 'sales': 'department'}
-    # turnover.rename(columns=rename_columns, inplace=True)
-
-    # department = turnover.department.value_counts()
-    # department_col = list(department.index)
-    # turnover["department"] = turnover["department"].astype('category').cat.reorder_categories(department_col).cat.codes
-
-    
-  
-    # # after dropping data leakage
-    # turnover.drop_duplicates(keep='first', inplace=True)
-
-    # # set cleaned dataset to csv file
-    # turnover.to_csv('../data/cleanedturnover.csv')
-    # # turnover percent ratio  
-    # print(len(turnover))
-    # print(len(turnover[turnover['left']==1]))
-    # turnover_perc_ratio = turnover['left'].value_counts()/len(turnover)*100
-    # print(f'turnover percent ratio: \n {turnover_perc_ratio}')
-    
-
-    # y = turnover.pop('left').values
-    # X = turnover.values
-    # X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-    # rfc.fit(X_train, y_train)
-    # y_pred = rfc.predict(X_test)
-
-
-    
-    # recall_after_drop = recall_score(y_test, y_pred)
-    # print(f'recall-score after leakage: {round(recall_after_drop,2)}')
-
-    # con_mat = confusion_matrix(y_test, y_pred)
-    # tn, fp, fn, tp = con_mat.ravel()
-    # print(f'tn: {tn}\n fp: {fp}\n fn: {fn}\n tp: {tp}')
-    # print(f'''Confusion matrix after leakage: \n {con_mat}''')
-
-    # recall_scores_arr = np.array([recall_before_drop, recall_after_drop])
-
-    # labels = ['Recall Before', 'Recall After']
-    # data = recall_scores_arr
-    # N = len(recall_scores_arr)
-    # fig, ax = plt.subplots(figsize=(8,5))
-    # width = 0.8
-    # tickLocations = np.arange(N)
-    # ax.bar(tickLocations, data, width, linewidth=3.0, align='center')
-    # ax.set_xticks(ticks=tickLocations)
-    # ax.set_xticklabels(labels)
-    # ax.set_xlim(min(tickLocations)-0.6,\
-    #             max(tickLocations)+0.6)
-    # ax.set_xlabel('Recall Scores')
-    # ax.set_ylabel('Percentage')
-    # ax.set_yticks(np.linspace(0,1,6))
-    # ax.yaxis.grid(True)
-    # ax.set_title('Recall Scores Before and After Data Leakage Exposed')
-    # fig.tight_layout(pad=1)
-    # plt.savefig('Recall_b_a_data_leakage.png')
-    # plt.show()
-
-    ## feature importance barplots
-    # features = list(turnover.columns)
-    # feat_dict = {k: v for k, v in zip(features, rfc.feature_importances_)}
-    # # print(feat_dict)
-    # # breakpoint()
-    # imp_feat_df = pd.DataFrame([feat_dict])
-    # imp_feat_df.sort_values(by=0, axis=1, inplace=True)  
-    
-    # labels = list(imp_feat_df.columns)
-    # data = imp_feat_df.values
-    # data = data.flatten()
-    # y = np.arange(data.shape[0])
-
-    # width = 0.8
-    # fig, ax = plt.subplots(figsize=(8,5))
-    # ax.barh(y, data, width, align='center')
-    # ax.set_yticks(y)
-    # ax.set_yticklabels(labels)
-    # ax.xaxis.grid(True)
-    # ax.set_ylabel('Feature Importance')
-    # ax.set_xlabel('Percentage')
-    # ax.set_title('Percentage by Feature Importance')
-    # fig.tight_layout(pad=1)
-    # plt.savefig('perc_by_feat_imp.png')
-    # plt.show()
-
-    # recall_feature_leakage = plot_ROC_curve()
+    # recall_feature_leakage = plot_ROC_curve() NOT SURE WHAT THIS IS DOING 
     # recall_feature_df = pd.DataFrame([recall_feature_leakage])
