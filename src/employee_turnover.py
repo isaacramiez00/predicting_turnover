@@ -6,7 +6,7 @@ from sklearn.metrics import confusion_matrix, roc_curve, auc
 from sklearn.ensemble import RandomForestClassifier
 from sklearn import tree
 import numpy as np
-from sklearn.metrics import recall_score
+from sklearn.metrics import recall_score, precision_score, precision_recall_curve
 plt.style.use('ggplot')
 
 '''
@@ -29,7 +29,6 @@ def plot_histograms(df):
         plt.legend(loc='best')
         fig.tight_layout(pad=2)
         plt.savefig(f'{feat}_new_style.png')
-
 
 def create_cat_percentage_df(df):
 
@@ -73,18 +72,18 @@ def create_cat_percentage_df(df):
 def plot_ROC_curve(df, drop_duplicates=False):
     '''
     plot roc curve based on given model
+    paramater - "drop_duplicates" gives user
+    the option to exploit data leakage
+    before or after to compare
     '''
 
     _, _, df = encode_cat_features(df)
 
     if drop_duplicates:
         df.drop_duplicates(keep='first', inplace=True)
-    
+        
     rfc = RandomForestClassifier()
     y = df.pop('left').values
-    # X = df.values
-    # X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
     recall_feature_leakage = {}
 
     for idx in range(len(df.columns)):
@@ -96,18 +95,17 @@ def plot_ROC_curve(df, drop_duplicates=False):
         y_pred = rfc.predict(X_test)
 
         feat_dict = {k: v for k, v in zip(features, rfc.feature_importances_)}
-        print(feat_dict)
-        print(f'data-leak-feature: {data_leakage_feature}')
+        # print(feat_dict)
+        # print(f'data-leak-feature: {data_leakage_feature}')
         
         recall = recall_score(y_test, y_pred)
-        print(f'recall-score: {round(recall,2)}')
+        precision = precision_score(y_test, y_pred)
+        print(f'recall-score: {round(recall,2)}\nprecision-score: {round(precision,2)}')
+
         recall_feature_leakage[data_leakage_feature] = round(recall,2)
     
-        # print(X.shape)
+        # print(confusion_matrix(y_test, y_pred))
 
-        print(confusion_matrix(y_test, y_pred))
-
-    breakpoint()
         # roc curve
         fpr, tpr, thresholds = roc_curve(y_test, y_pred, pos_label=1)
         auc_ = auc(fpr, tpr)
@@ -119,11 +117,14 @@ def plot_ROC_curve(df, drop_duplicates=False):
         ax.plot(fpr, tpr, label=f'{data_leakage_feature} = {round(recall,2)}')
         ax.set_xlabel('False Positive Rate')
         ax.set_ylabel('True Positive Rate')
-        ax.set_title(f'ROC Curve comparing Features')
-        ax.legend(loc='best')    
+        if drop_duplicates:
+            ax.set_title('ROC Curve comparing Features After Dropping Duplicates')
+        else:
+            ax.set_title('ROC Curve comparing Features Before Dropping Duplicates')
+        ax.legend(loc='best') 
+        # breakpoint()   
         # plt.savefig(f'ROC_Curve_Wout_{data_leakage_feature}_feature.png')
     
-
 def plot_side_by_side_percentage_barcharts(df, column):
  
     stayed = df['stayed_percentage'].values
@@ -212,7 +213,7 @@ def plot_data_visualizations(df):
     # STILL NEED TO UPDATE ROC CURVE, PROFIT CURVE, PARTIAL DEPEDENDENCE, CONFUSION MATRIX, TEST/TRAIN VAL SCORES
     pass 
 
-def run_rfc_model(drop_duplicates=False):
+def run_rfc_model(drop_duplicates=False, scores_only=False):
     '''
     runs the rfc model and returns recall score.
     Paramater gives user the option to drop duplicates
@@ -229,8 +230,14 @@ def run_rfc_model(drop_duplicates=False):
     rfc.fit(X_train, y_train)
     y_pred = rfc.predict(X_test)
 
-    recall_before_drop = recall_score(y_test, y_pred)
-    return f'recall-score before leakage: {round(recall_before_drop,2)}'
+    recall = recall_score(y_test, y_pred)
+    precision = precision_score(y_test, y_pred)
+    if scores_only:
+        return recall, precision
+    elif drop_duplicates:
+        return f'recall-score After leakage: {round(recall_before_drop,2)}\nprecision-score After leakage:{round(precision,2)}'
+    else:
+        return f'recall-score before leakage: {round(recall_before_drop,2)}\nprecision-score before leakage:{round(precision,2)}'
 
 def run_all_models():
     '''
@@ -293,7 +300,9 @@ def plot_recall_scores():
     '''
     plots recall scores in bar chart
     '''
-
+    recall_before_drop, _ = run_rfc_model(drop_duplicates=False, scores_only=True)
+    recall_after_drop, _ = run_rfc_model(drop_duplicates=True, scores_only=True)
+    
     recall_scores_arr = np.array([recall_before_drop, recall_after_drop])
 
     labels = ['Recall Before', 'Recall After']
@@ -322,6 +331,6 @@ if __name__=='__main__':
     # data visuals
     # create_cat_percentage_df()
     # plot_histograms()
-    plot_ROC_curve(turnover)
+    # plot_ROC_curve(turnover) - still needs modification
     # plot_corr_matrix(turnover)
 
