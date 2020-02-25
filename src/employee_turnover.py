@@ -13,10 +13,10 @@ plt.style.use('ggplot')
 To whoever looks at this, I apoligize in advance for the terrible code... forgive me..i'm on it
 '''
 
-def plot_histograms():
+def plot_histograms(df):
 
-    left_df = turnover[turnover['left']==1]
-    stayed_df = turnover[turnover['left']==0]
+    left_df = df[turnover['left']==1]
+    stayed_df = df[turnover['left']==0]
     continous_features = ['satisfaction_level_percentage','last_evaluation_percentage','average_montly_hours']
     
     for feat in continous_features:
@@ -31,18 +31,18 @@ def plot_histograms():
         plt.savefig(f'{feat}_new_style.png')
 
 
-def create_cat_percentage_df():
+def create_cat_percentage_df(df):
 
-    left_df = turnover[turnover['left']==1]
-    stayed_df = turnover[turnover['left']==0]
+    left_df = df[turnover['left']==1]
+    stayed_df = df[turnover['left']==0]
 
     cat_feature = ['number_project', 'time_spend_company_years',\
                    'Work_accident', 'promotion_last_5years', 'department', 'salary']
 
     for cat in cat_feature:
 
-        current_df = turnover.groupby(cat).sum()
-        total_val_counts = turnover[cat].value_counts()
+        current_df = df.groupby(cat).sum()
+        total_val_counts = df[cat].value_counts()
 
         if (cat  == 'department') or (cat == 'salary'):
             current_df.sort_values('left', axis=0, inplace=True)
@@ -70,24 +70,28 @@ def create_cat_percentage_df():
 
         plot_side_by_side_percentage_barcharts(current_df, column=cat)
 
-def plot_ROC_curve():
-    # random forest model w recall score metric
+def plot_ROC_curve(df, drop_duplicates=False):
+    '''
+    plot roc curve based on given model
+    '''
 
-    turnover.drop_duplicates(keep='first', inplace=True)
+    _, _, df = encode_cat_features(df)
+
+    if drop_duplicates:
+        df.drop_duplicates(keep='first', inplace=True)
+    
     rfc = RandomForestClassifier()
-    y = turnover.pop('left').values
-    X = turnover.values
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    y = df.pop('left').values
+    # X = df.values
+    # X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-
-    ## data leakage problem
     recall_feature_leakage = {}
 
-    for idx in range(len(turnover.columns)):
-        # breakpoint()
-        features = list(turnover.columns)
+    for idx in range(len(df.columns)):
+        features = list(df.columns)
         data_leakage_feature = features.pop(idx)
-        X = turnover[features]
+        X = df[features]
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
         rfc.fit(X_train, y_train)
         y_pred = rfc.predict(X_test)
 
@@ -97,12 +101,13 @@ def plot_ROC_curve():
         
         recall = recall_score(y_test, y_pred)
         print(f'recall-score: {round(recall,2)}')
-        recall_feature_leakage[data_leakage_feature] = recall
+        recall_feature_leakage[data_leakage_feature] = round(recall,2)
     
-        print(X.shape)
+        # print(X.shape)
 
         print(confusion_matrix(y_test, y_pred))
-        
+
+    breakpoint()
         # roc curve
         fpr, tpr, thresholds = roc_curve(y_test, y_pred, pos_label=1)
         auc_ = auc(fpr, tpr)
@@ -111,13 +116,13 @@ def plot_ROC_curve():
 
         # roc curve plot
         ax.plot([0, 1], [0, 1], 'k--')
-        ax.plot(fpr, tpr, label=f'RFC Recall Score= {round(recall,2)}')
-        ax.set_xlabel('False positive rate')
-        ax.set_ylabel('True positive rate')
-        ax.set_title(f'ROC curve With Out {data_leakage_feature} Feature')
+        ax.plot(fpr, tpr, label=f'{data_leakage_feature} = {round(recall,2)}')
+        ax.set_xlabel('False Positive Rate')
+        ax.set_ylabel('True Positive Rate')
+        ax.set_title(f'ROC Curve comparing Features')
         ax.legend(loc='best')    
-        plt.savefig(f'ROC_Curve_Wout_{data_leakage_feature}_feature.png')
-        pass
+        # plt.savefig(f'ROC_Curve_Wout_{data_leakage_feature}_feature.png')
+    
 
 def plot_side_by_side_percentage_barcharts(df, column):
  
@@ -156,6 +161,30 @@ def load_n_clean_data(filepath):
     df.rename(columns=rename_columns, inplace=True)
     return df
 
+def encode_cat_features(df):
+    '''
+    one-hot-encode categorical (object) features
+    (department and salary column)
+    return orders [salary_df, department_df, df]
+    df becomes the updated df with the encoded columns
+    for department and salary
+    '''
+
+    cat_feature = ['salary', 'department']
+    dfs = []
+
+    for cat in cat_feature:
+        current = df[cat].value_counts()
+        current_col = list(current.index)
+        df[cat] = df[cat].astype('category').cat.reorder_categories(current_col).cat.codes
+        current_code = df[cat].value_counts()
+        current_code_col = list(current_code.index)
+        current_dict = {f'{cat}': current_col, 'code': current_code_col}
+        df_name = f'{cat}_df'
+        df_name = pd.DataFrame(data=current_dict)
+        dfs.append(df_name)
+
+    return dfs[0], dfs[1], df
 
 def plot_corr_matrix(df):
     '''
@@ -164,16 +193,9 @@ def plot_corr_matrix(df):
     in turnover dataset
     '''
 
-    salary = df['salary'].unique()
-    # salary_col = list(salary.index)
-    df["salary"] = df["salary"].astype('category').cat.reorder_categories(salary).cat.codes
-
-    department = list(df['department'].unique())
-    # department_col = list(department.index)
-    df["department"] = df["department"].astype('category').cat.reorder_categories(department).cat.codes
-
+    _, _, encode_df = encode_cat_features(df)
     fig, ax = plt.subplots(figsize=(12,8))
-    ax = sns.heatmap(df.corr())
+    ax = sns.heatmap(encode_df.corr())
     plt.tight_layout(pad=4)
     plt.savefig('correlation_matrix_newest.png')
 
@@ -196,6 +218,7 @@ def run_rfc_model(drop_duplicates=False):
     Paramater gives user the option to drop duplicates
     found in the data to compare scores.
     '''
+
     if drop_duplicates:
         df.drop_duplicates(keep='first', inplace=True)
 
@@ -266,7 +289,7 @@ def plot_feat_importances():
     fig.tight_layout(pad=1)
     plt.savefig('perc_by_feat_imp.png')
 
-def plot recall_scores():
+def plot_recall_scores():
     '''
     plots recall scores in bar chart
     '''
@@ -295,12 +318,10 @@ def plot recall_scores():
 if __name__=='__main__':
 
     turnover = load_n_clean_data('../data/turnover.csv')
-    plot_corr_matrix(turnover)
-    
+
     # data visuals
     # create_cat_percentage_df()
     # plot_histograms()
-    # plot_ROC_curve()
+    plot_ROC_curve(turnover)
+    # plot_corr_matrix(turnover)
 
-    # recall_feature_leakage = plot_ROC_curve() NOT SURE WHAT THIS IS DOING 
-    # recall_feature_df = pd.DataFrame([recall_feature_leakage])
