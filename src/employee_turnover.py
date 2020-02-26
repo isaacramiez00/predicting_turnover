@@ -35,9 +35,14 @@ class EmployeeTurnoverDatasets():
     desired dataframe
     '''
 
-    def __init__(self, df):
+    def __init__(self, df, drop_duplicates=True):
 
+        if drop_duplicates:
+            self.df.drop_duplicates(keep='first', inplace=True)
+        
+        self.drop_duplicates = drop_duplicates
         self.df = df
+        self.features = list(self.df.columns)
         self.left_df = self.df[turnover['left']==1]
         self.stayed_df = self.df[turnover['left']==0]
         self.categorical_features = ['number_project', 'time_spend_company_years',\
@@ -45,6 +50,8 @@ class EmployeeTurnoverDatasets():
         self.normalized_feature = None
         self.salary_code = None
         self.department_code = None
+        self.continous_features = ['satisfaction_level_percentage','last_evaluation_percentage','average_montly_hours']
+        self.encoded_df = None
 
     def normalize_categoricals(self, column):
         '''
@@ -95,10 +102,12 @@ class EmployeeTurnoverDatasets():
         for department or salary
         '''
 
-        current = self.df[column].value_counts()
+        self.encoded_df = self.df
+
+        current = self.encoded_df[column].value_counts()
         current_col = list(current.index)
-        self.df[column] = self.df[column].astype('category').cat.reorder_categories(current_col).cat.codes
-        current_code = self.df[column].value_counts()
+        self.encoded_df[column] = self.encoded_df[column].astype('category').cat.reorder_categories(current_col).cat.codes
+        current_code = self.encoded_df[column].value_counts()
         current_code_col = list(current_code.index)
         current_dict = {f'{column}': current_col, 'code': current_code_col}
         df_name = f'{column}_df'
@@ -106,42 +115,57 @@ class EmployeeTurnoverDatasets():
 
         if column == 'salary':
             self.salary_code = df_name
-            return self.salary_code, self.df
+            return self.salary_code, self.encoded_df
         else:
             self.department_code = df_name
-            return self.department_code, self.df
+            return self.department_code, self.encoded_df
 
-class EmployeeTurnoverVizualizations():
+class EmployeeTurnoverVizualizations(EmployeeTurnoverDatasets):
+    '''
+    This class plots all the data vizualizations and inherits
+    the EmployeeTurnoverDatasets class
+    '''
     
-    def plot_histograms(self):
+    def __init__(self, df):
+        super().__init__(df)
 
-        left_df = self.df[turnover['left']==1]
-        stayed_df = self.df[turnover['left']==0]
-        continous_features = ['satisfaction_level_percentage','last_evaluation_percentage','average_montly_hours']
-        
-        for feat in continous_features:
-            fig, ax = plt.subplots(figsize=(8,5))
-            ax.hist(x=stayed_df[feat], stacked=True, label='stayed', alpha=0.8)
-            ax.hist(x=left_df[feat], stacked=True, label='left', alpha=0.8)
-            ax.set_title(f'{feat}')
-            ax.set_xlabel(f'{feat}')
-            ax.set_ylabel('Frequency Count')
-            plt.legend(loc='best')
-            fig.tight_layout(pad=2)
-            plt.savefig(f'{feat}_new_style.png')
+    def plot_histograms(self, feat):
+        '''
+        feat - continous feature from turnover dataset
+        Best to only plot continous Features;
+        These are the columns it can plot:
+        ['satisfaction_level_percentage','last_evaluation_percentage','average_montly_hours']
+        '''
+
+        fig, ax = plt.subplots(figsize=(8,5))
+        ax.hist(x=self.stayed_df[feat], stacked=True, label='stayed', alpha=0.8)
+        ax.hist(x=self.left_df[feat], stacked=True, label='left', alpha=0.8)
+        ax.set_title(f'{feat}')
+        ax.set_xlabel(f'{feat}')
+        ax.set_ylabel('Frequency Count')
+        plt.legend(loc='best')
+        fig.tight_layout(pad=2)
+        plt.savefig(f'{feat}_new_style.png')
 
     def plot_side_by_side_percentage_barcharts(self, column):
+        '''
+        Works with normalized_categoricals() from EmployeeTurnoverDataset
+        Plots a bar chart comparison of employees who stayed and left
+        As a reminder the columns that best work with this method are:
+        features =  ['number_project', 'time_spend_company_years',\
+                    'Work_accident', 'promotion_last_5years', 'department', 'salary']
+        '''
     
-        stayed = self.current_df['stayed_percentage'].values
-        left = self.current_df['left_percentage'].values
+        stayed = self.normalized_feature['stayed_percentage'].values
+        left = self.normalized_feature['left_percentage'].values
 
-        labels = list(self.current_df.index)
+        labels = list(self.normalized_feature.index)
 
         fig, ax = plt.subplots(figsize=(10,5))
         width = 0.4
         xlocs = np.arange(len(stayed))
         ax.bar(xlocs-width, stayed, width, label='Stayed')
-        ax.bar(xlocs, left, width, label='left')
+        ax.bar(xlocs, left, width, label='Left')
         ax.set_xticks(ticks=range(len(stayed)))
         ax.set_xticklabels(labels)
         ax.set_xlabel(f'{column}')
@@ -152,74 +176,49 @@ class EmployeeTurnoverVizualizations():
         fig.tight_layout(pad=2)
         plt.savefig(f'Employer_Turnover_by_{column}_side_barcharts.png')
 
-    def plot_corr_matrix(df):
+    def plot_corr_matrix(self,df):
         '''
         plots correlation matrix to
         find correlation among columns
         in turnover dataset
+        (uses self.encoded_df)
         '''
 
-        _, _, encode_df = encode_cat_features(df)
         fig, ax = plt.subplots(figsize=(12,8))
-        ax = sns.heatmap(encode_df.corr())
+        ax = sns.heatmap(self.encoded_df.corr())
         plt.tight_layout(pad=4)
         plt.savefig('correlation_matrix_newest.png')
 
-    def plot_ROC_curve(self, drop_duplicates=False):
+    def plot_ROC_curve(self):
         '''
         plot roc curve based on given model
         paramater - "drop_duplicates" gives user
         the option to exploit data leakage
         before or after to compare
+        ---UNDER CONSTRUCTION---
         '''
 
-        _, _, self.df = encode_cat_features(df)
+        # _, _, self.df = encode_cat_features(df)
 
+        # print(confusion_matrix(y_test, y_pred))
+
+        # roc curve
+        fpr, tpr, thresholds = roc_curve(y_test, y_pred, pos_label=1)
+        auc_ = auc(fpr, tpr)
+
+        fig, ax = plt.subplots(figsize=(8,5))
+
+        # roc curve plot
+        ax.plot([0, 1], [0, 1], 'k--')
+        ax.plot(fpr, tpr, label=f'{data_leakage_feature} = {round(recall,2)}')
+        ax.set_xlabel('False Positive Rate')
+        ax.set_ylabel('True Positive Rate')
         if drop_duplicates:
-            selfdf.drop_duplicates(keep='first', inplace=True)
-            
-        rfc = RandomForestClassifier()
-        y = self.df.pop('left').values
-        recall_feature_leakage = {}
-
-        for idx in range(len(self.df.columns)):
-            features = list(self.df.columns)
-            data_leakage_feature = features.pop(idx)
-            X = self.df[features]
-            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-            rfc.fit(X_train, y_train)
-            y_pred = rfc.predict(X_test)
-
-            feat_dict = {k: v for k, v in zip(features, rfc.feature_importances_)}
-            # print(feat_dict)
-            # print(f'data-leak-feature: {data_leakage_feature}')
-            
-            recall = recall_score(y_test, y_pred)
-            precision = precision_score(y_test, y_pred)
-            print(f'recall-score: {round(recall,2)}\nprecision-score: {round(precision,2)}')
-
-            recall_feature_leakage[data_leakage_feature] = round(recall,2)
-        
-            # print(confusion_matrix(y_test, y_pred))
-
-            # roc curve
-            fpr, tpr, thresholds = roc_curve(y_test, y_pred, pos_label=1)
-            auc_ = auc(fpr, tpr)
-
-            fig, ax = plt.subplots(figsize=(8,5))
-
-            # roc curve plot
-            ax.plot([0, 1], [0, 1], 'k--')
-            ax.plot(fpr, tpr, label=f'{data_leakage_feature} = {round(recall,2)}')
-            ax.set_xlabel('False Positive Rate')
-            ax.set_ylabel('True Positive Rate')
-            if drop_duplicates:
-                ax.set_title('ROC Curve comparing Features After Dropping Duplicates')
-            else:
-                ax.set_title('ROC Curve comparing Features Before Dropping Duplicates')
-            ax.legend(loc='best') 
-            # breakpoint()   
-            # plt.savefig(f'ROC_Curve_Wout_{data_leakage_feature}_feature.png')
+            ax.set_title('ROC Curve comparing Features After Dropping Duplicates')
+        else:
+            ax.set_title('ROC Curve comparing Features Before Dropping Duplicates')
+        ax.legend(loc='best') 
+        # plt.savefig(f'ROC_Curve_Wout_{data_leakage_feature}_feature.png')
 
     def plot_data_visualizations(df):
         '''
@@ -347,6 +346,42 @@ class EmployeeTurnoverClassifier():
         and returns recall score.
         '''
         pass
+
+    def get_feature_importances(self):
+        '''
+        goes in model class
+        '''
+        rfc = RandomForestClassifier()
+        y = self.df.pop('left').values
+        recall_feature_leakage = {}
+
+        for idx in range(len(self.df.columns)):
+            features = self.features
+            data_leakage_feature = features.pop(idx)
+            X = self.df[features]
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+            rfc.fit(X_train, y_train)
+            y_pred = rfc.predict(X_test)
+
+            feat_dict = {k: v for k, v in zip(features, rfc.feature_importances_)}
+
+            # possible attributes
+            # print(feat_dict)
+            # print(f'data-leak-feature: {data_leakage_feature}')
+
+    def get_recall_scores(self):
+        '''
+        recall scores for features
+        ---UNDER CONSTRUCTION---
+        '''
+        
+        # has to loop through each feature; somehow utilize the method above to perform stuff; In need of a lunch break
+        recall = recall_score(y_test, y_pred)
+        precision = precision_score(y_test, y_pred)
+        print(f'recall-score: {round(recall,2)}\nprecision-score: {round(precision,2)}')
+
+        recall_feature_leakage[data_leakage_feature] = round(recall,2)
+
 
 if __name__=='__main__':
 
