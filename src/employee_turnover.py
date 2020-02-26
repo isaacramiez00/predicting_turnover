@@ -9,8 +9,9 @@ import numpy as np
 from sklearn.metrics import recall_score, precision_score, precision_recall_curve
 plt.style.use('ggplot')
 
+
 '''
-To whoever looks at this, I apoligize in advance for the terrible code... forgive me..i'm on it
+Under Construction - Not Ready for Deployment
 '''
 
 def load_n_clean_data(filepath):
@@ -27,12 +28,91 @@ def load_n_clean_data(filepath):
     df.rename(columns=rename_columns, inplace=True)
     return df
 
-class EmployeeTurnoverClassifier():
+
+class EmployeeTurnoverDatasets():
+    '''
+    Class breaks down Turnover dataset and may return
+    desired dataframe
+    '''
 
     def __init__(self, df):
-        self.df = df
-        self.current_df = None
 
+        self.df = df
+        self.left_df = self.df[turnover['left']==1]
+        self.stayed_df = self.df[turnover['left']==0]
+        self.categorical_features = ['number_project', 'time_spend_company_years',\
+                    'Work_accident', 'promotion_last_5years', 'department', 'salary']
+        self.normalized_feature = None
+        self.salary_code = None
+        self.department_code = None
+
+    def normalize_categoricals(self, column):
+        '''
+        May only take categorical features of the turnover features:
+        features =  ['number_project', 'time_spend_company_years',\
+                    'Work_accident', 'promotion_last_5years', 'department', 'salary']
+        call self.categorical_features to get list of possible columns to pass
+        '''
+
+        current_df = self.df.groupby(column).sum()
+        total_val_counts = self.df[column].value_counts()
+
+        if (column  == 'department') or (column == 'salary'):
+            current_df.sort_values('left', axis=0, inplace=True)
+            current_df = current_df.merge(total_val_counts, left_index=True, right_index=True)
+            current_df.rename(columns={current_df.columns[-1]: 'total_count'}, inplace=True)
+
+            if column == 'salary':
+                current_df = current_df.reindex(index= ['low', 'medium', 'high'])
+            
+        else:
+            total_val_counts.sort_index(ascending=True, inplace=True)
+            current_df['total_count'] = total_val_counts.values   
+
+        current_df['left_percentage'] = current_df['left'] / current_df['total_count']
+        current_df['stayed_percentage'] = 1 - current_df['left_percentage']
+
+        if column == 'department':
+            current_df.sort_values('left_percentage', axis=0, inplace=True)
+
+        elif column == 'Work_accident':
+            current_df.rename(index={0:'No Accident', 1:'Accident'}, inplace=True)
+
+        elif column == 'promotion_last_5years':
+            current_df.rename(index={0:'No Promotion', 1:'Promotion'}, inplace=True)
+
+        self.normalized_feature = current_df
+
+        return current_df
+            
+    def encode_categorical_features(self, column):
+        '''
+        Used for Correlation Matrix and Random Forest Classifier
+        Modeling; One-hot-encode categorical (object) features
+        (Department or Salary column);
+        return orders [column_df, self.df];
+        df becomes the updated df with the encoded columns
+        for department or salary
+        '''
+
+        current = self.df[column].value_counts()
+        current_col = list(current.index)
+        self.df[column] = self.df[column].astype('category').cat.reorder_categories(current_col).cat.codes
+        current_code = self.df[column].value_counts()
+        current_code_col = list(current_code.index)
+        current_dict = {f'{column}': current_col, 'code': current_code_col}
+        df_name = f'{column}_df'
+        df_name = pd.DataFrame(data=current_dict)
+
+        if column == 'salary':
+            self.salary_code = df_name
+            return self.salary_code, self.df
+        else:
+            self.department_code = df_name
+            return self.department_code, self.df
+
+class EmployeeTurnoverVizualizations():
+    
     def plot_histograms(self):
 
         left_df = self.df[turnover['left']==1]
@@ -72,45 +152,18 @@ class EmployeeTurnoverClassifier():
         fig.tight_layout(pad=2)
         plt.savefig(f'Employer_Turnover_by_{column}_side_barcharts.png')
 
-    def create_cat_percentage_df(self):
+    def plot_corr_matrix(df):
+        '''
+        plots correlation matrix to
+        find correlation among columns
+        in turnover dataset
+        '''
 
-        left_df = self.df[turnover['left']==1]
-        stayed_df = self.df[turnover['left']==0]
-
-        cat_feature = ['number_project', 'time_spend_company_years',\
-                    'Work_accident', 'promotion_last_5years', 'department', 'salary']
-
-        for cat in cat_feature:
-
-            current_df = self.df.groupby(cat).sum()
-            total_val_counts = self.df[cat].value_counts()
-
-            if (cat  == 'department') or (cat == 'salary'):
-                current_df.sort_values('left', axis=0, inplace=True)
-                current_df = current_df.merge(total_val_counts, left_index=True, right_index=True)
-                current_df.rename(columns={current_df.columns[-1]: 'total_count'}, inplace=True)
-
-                if cat == 'salary':
-                    current_df = current_df.reindex(index= ['low', 'medium', 'high'])
-                
-            else:
-                total_val_counts.sort_index(ascending=True, inplace=True)
-                current_df['total_count'] = total_val_counts.values   
-
-            current_df['left_percentage'] = current_df['left'] / current_df['total_count']
-            current_df['stayed_percentage'] = 1 - current_df['left_percentage']
-
-            if cat == 'department':
-                current_df.sort_values('left_percentage', axis=0, inplace=True)
-
-            if cat == 'Work_accident':
-                current_df.rename(index={0:'No Accident', 1:'Accident'}, inplace=True)
-
-            if cat == 'promotion_last_5years':
-                current_df.rename(index={0:'No Promotion', 1:'Promotion'}, inplace=True)
-
-            self.current_df = current_df
-            
+        _, _, encode_df = encode_cat_features(df)
+        fig, ax = plt.subplots(figsize=(12,8))
+        ax = sns.heatmap(encode_df.corr())
+        plt.tight_layout(pad=4)
+        plt.savefig('correlation_matrix_newest.png')
 
     def plot_ROC_curve(self, drop_duplicates=False):
         '''
@@ -167,44 +220,6 @@ class EmployeeTurnoverClassifier():
             ax.legend(loc='best') 
             # breakpoint()   
             # plt.savefig(f'ROC_Curve_Wout_{data_leakage_feature}_feature.png')
-        
-    def encode_cat_features(df):
-        '''
-        one-hot-encode categorical (object) features
-        (department and salary column)
-        return orders [salary_df, department_df, df]
-        df becomes the updated df with the encoded columns
-        for department and salary
-        '''
-
-        cat_feature = ['salary', 'department']
-        dfs = []
-
-        for cat in cat_feature:
-            current = df[cat].value_counts()
-            current_col = list(current.index)
-            df[cat] = df[cat].astype('category').cat.reorder_categories(current_col).cat.codes
-            current_code = df[cat].value_counts()
-            current_code_col = list(current_code.index)
-            current_dict = {f'{cat}': current_col, 'code': current_code_col}
-            df_name = f'{cat}_df'
-            df_name = pd.DataFrame(data=current_dict)
-            dfs.append(df_name)
-
-        return dfs[0], dfs[1], df
-
-    def plot_corr_matrix(df):
-        '''
-        plots correlation matrix to
-        find correlation among columns
-        in turnover dataset
-        '''
-
-        _, _, encode_df = encode_cat_features(df)
-        fig, ax = plt.subplots(figsize=(12,8))
-        ax = sns.heatmap(encode_df.corr())
-        plt.tight_layout(pad=4)
-        plt.savefig('correlation_matrix_newest.png')
 
     def plot_data_visualizations(df):
         '''
@@ -218,39 +233,6 @@ class EmployeeTurnoverClassifier():
         plot_percentage_comparison(df)
         # STILL NEED TO UPDATE ROC CURVE, PROFIT CURVE, PARTIAL DEPEDENDENCE, CONFUSION MATRIX, TEST/TRAIN VAL SCORES
         pass 
-
-    def run_rfc_model(drop_duplicates=False, scores_only=False):
-        '''
-        runs the rfc model and returns recall score.
-        Paramater gives user the option to drop duplicates
-        found in the data to compare scores.
-        '''
-
-        if drop_duplicates:
-            df.drop_duplicates(keep='first', inplace=True)
-
-        rfc = RandomForestClassifier()
-        y = df.pop('left').values
-        X = df.values
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-        rfc.fit(X_train, y_train)
-        y_pred = rfc.predict(X_test)
-
-        recall = recall_score(y_test, y_pred)
-        precision = precision_score(y_test, y_pred)
-        if scores_only:
-            return recall, precision
-        elif drop_duplicates:
-            return f'recall-score After leakage: {round(recall_before_drop,2)}\nprecision-score After leakage:{round(precision,2)}'
-        else:
-            return f'recall-score before leakage: {round(recall_before_drop,2)}\nprecision-score before leakage:{round(precision,2)}'
-
-    def run_all_models():
-        '''
-        runs all models that were tested
-        and returns recall score.
-        '''
-        pass
 
     def plot_percentage_comparison(df):
         '''
@@ -330,10 +312,46 @@ class EmployeeTurnoverClassifier():
         fig.tight_layout(pad=1)
         plt.savefig('Recall_b_a_data_leakage.png')
 
+class EmployeeTurnoverClassifier():
+
+    def run_rfc_model(drop_duplicates=False, scores_only=False):
+        '''
+        runs the rfc model and returns recall score.
+        Paramater gives user the option to drop duplicates
+        found in the data to compare scores.
+        '''
+
+        if drop_duplicates:
+            df.drop_duplicates(keep='first', inplace=True)
+
+        rfc = RandomForestClassifier()
+        y = df.pop('left').values
+        X = df.values
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+        rfc.fit(X_train, y_train)
+        y_pred = rfc.predict(X_test)
+
+        recall = recall_score(y_test, y_pred)
+        precision = precision_score(y_test, y_pred)
+        if scores_only:
+            return recall, precision
+        elif drop_duplicates:
+            return f'recall-score After leakage: {round(recall_before_drop,2)}\nprecision-score After leakage:{round(precision,2)}'
+        else:
+            return f'recall-score before leakage: {round(recall_before_drop,2)}\nprecision-score before leakage:{round(precision,2)}'
+
+
+    def run_all_models():
+        '''
+        runs all models that were tested
+        and returns recall score.
+        '''
+        pass
+
 if __name__=='__main__':
 
     turnover = load_n_clean_data('../data/turnover.csv')
-    t = EmployeeTurnoverClassifier(turnover)
+    t = EmployeeTurnoverDatasets(turnover)
 
     # data visuals
     # create_cat_percentage_df()
