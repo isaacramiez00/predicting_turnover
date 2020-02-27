@@ -37,23 +37,37 @@ class EmployeeTurnoverDatasets():
 
     def __init__(self, df, drop_duplicates=True):
 
+        self.df = df
         if drop_duplicates:
             self.df.drop_duplicates(keep='first', inplace=True)
         
-        self.drop_duplicates = drop_duplicates
-        self.df = df
+        self.is_dropped = drop_duplicates
         self.features = list(self.df.columns)
         self.left_df = self.df[turnover['left']==1]
         self.stayed_df = self.df[turnover['left']==0]
         self.categorical_features = ['number_project', 'time_spend_company_years',\
                     'Work_accident', 'promotion_last_5years', 'department', 'salary']
-        self.normalized_feature = None
+        self.continous_features = ['satisfaction_level_percentage','last_evaluation_percentage','average_montly_hours']
         self.salary_code = None
         self.department_code = None
-        self.continous_features = ['satisfaction_level_percentage','last_evaluation_percentage','average_montly_hours']
-        self.encoded_df = None
+        self.featurize_df = None
+        self._transform_df()
+        self._encode_featurized_columns()
 
-    def normalize_categoricals(self, column):
+    def _transform_df(self, columns=['department', 'salary']):
+        '''
+        Create Featurized dataframe to pass in model
+        '''
+
+        self.featurize_df = self.df
+
+        for column in columns:
+            current = self.featurize_df[column].value_counts()
+            current_col = list(current.index)
+            self.featurize_df[column] = self.featurize_df[column].astype('category').cat.reorder_categories(current_col).cat.codes
+        return None
+
+    def get_feature_turnover_ratio(self, column):
         '''
         May only take categorical features of the turnover features:
         features =  ['number_project', 'time_spend_company_years',\
@@ -88,11 +102,11 @@ class EmployeeTurnoverDatasets():
         elif column == 'promotion_last_5years':
             current_df.rename(index={0:'No Promotion', 1:'Promotion'}, inplace=True)
 
-        self.normalized_feature = current_df
+        current_df = current_df.iloc[:,-2:]
 
         return current_df
             
-    def encode_categorical_features(self, column):
+    def _encode_featurized_columns(self, columns=['department', 'salary']):
         '''
         Used for Correlation Matrix and Random Forest Classifier
         Modeling; One-hot-encode categorical (object) features
@@ -102,34 +116,92 @@ class EmployeeTurnoverDatasets():
         for department or salary
         '''
 
-        self.encoded_df = self.df
+        for column in columns:
+            current_code = self.df[column].value_counts().reset_index()
+            current_code.reset_index(inplace=True)
+            current_code.drop(f'{column}', axis=1, inplace=True)
+            current_code.rename(columns={'level_0': 'code', 'index': f'{column}'}, inplace=True)
 
-        current = self.encoded_df[column].value_counts()
-        current_col = list(current.index)
-        self.encoded_df[column] = self.encoded_df[column].astype('category').cat.reorder_categories(current_col).cat.codes
-        current_code = self.encoded_df[column].value_counts()
-        current_code_col = list(current_code.index)
-        current_dict = {f'{column}': current_col, 'code': current_code_col}
-        df_name = f'{column}_df'
-        df_name = pd.DataFrame(data=current_dict)
+            if column == 'salary':
+                self.salary_code = current_code
+            else:
+                self.department_code = current_code
+        
+        return None
 
-        if column == 'salary':
-            self.salary_code = df_name
-            return self.salary_code, self.encoded_df
-        else:
-            self.department_code = df_name
-            return self.department_code, self.encoded_df
 
-class EmployeeTurnoverVizualizations(EmployeeTurnoverDatasets):
+class EmployeeTurnoverClassifier(EmployeeTurnoverDatasets):
+    '''
+    Allows us to run models on Turnover dataset;
+    calls run_model when instantiated to then give back
+    results
+    '''
+
+    def __init__(self, df, model, drop_duplicates=True):
+
+        super().__init__(df)
+        self.model = model
+        self.recall = None
+        self.precision = None
+        self.feature_importance = {k: v for k, v in zip(self.features, self.model.feature_importances_)}
+        self.compare_recall_scores = None
+        self.X_train = None
+        self.X_test = None
+        self.y_train = None
+        self.y_test = None
+        self.y_pred = None
+        self.X = None
+        self.y = None
+        self.run_model()
+
+    def run_model(self):
+        '''
+        runs the model and gets recall score.
+        Paramater gives user the option to drop duplicates
+        found in the data to compare scores.
+        '''
+
+        self.y = self.df.pop('left').values
+        self.X = self.df.values
+        self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(self.X, self.y, test_size=0.2, random_state=42)
+        self.model.fit(self.X_train, self.y_train)
+        self.y_pred = self.model.predict(self.X_test)
+
+        self.recall = recall_score(self.y_test, self.y_pred)
+        self.precision = precision_score(self.y_test, self.y_pred)    
+
+    def compare_recall_scores(self):
+        '''
+        recall scores for features
+        ---UNDER CONSTRUCTION---
+        '''
+        
+        recall_feature_leakage = {}
+
+        for idx in range(len(self.features)):
+            features = self.features
+            data_leakage_feature = features.pop(idx)
+            X = self.df[features]
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+            rfc.fit(X_train, y_train)
+            y_pred = self.model.predict(X_test)
+        
+            recall = recall_score(y_test, y_pred)
+            precision = precision_score(y_test, y_pred)
+            recall_feature_leakage[data_leakage_feature] = [round(recall,2), round(precision,2)]
+
+        self.compare_recall_scores = recall_feature_leakage
+
+class EmployeeTurnoverVizualizations(EmployeeTurnoverDatasets, EmployeeTurnoverClassifier):
     '''
     This class plots all the data vizualizations and inherits
     the EmployeeTurnoverDatasets class
     '''
     
-    def __init__(self, df):
-        super().__init__(df)
+    def __init__(self, df, model, drop_duplicates=True):
+        super().__init__(df, model, drop_duplicates=True)
 
-    def plot_histograms(self, feat):
+    def plot_histograms(self):
         '''
         feat - continous feature from turnover dataset
         Best to only plot continous Features;
@@ -137,17 +209,18 @@ class EmployeeTurnoverVizualizations(EmployeeTurnoverDatasets):
         ['satisfaction_level_percentage','last_evaluation_percentage','average_montly_hours']
         '''
 
-        fig, ax = plt.subplots(figsize=(8,5))
-        ax.hist(x=self.stayed_df[feat], stacked=True, label='stayed', alpha=0.8)
-        ax.hist(x=self.left_df[feat], stacked=True, label='left', alpha=0.8)
-        ax.set_title(f'{feat}')
-        ax.set_xlabel(f'{feat}')
-        ax.set_ylabel('Frequency Count')
-        plt.legend(loc='best')
-        fig.tight_layout(pad=2)
-        plt.savefig(f'{feat}_new_style.png')
+        for feat in self.continous_features:
+            fig, ax = plt.subplots(figsize=(8,5))
+            ax.hist(x=self.stayed_df[feat], stacked=True, label='stayed', alpha=0.8)
+            ax.hist(x=self.left_df[feat], stacked=True, label='left', alpha=0.8)
+            ax.set_title(f'{feat}')
+            ax.set_xlabel(f'{feat}')
+            ax.set_ylabel('Frequency Count')
+            plt.legend(loc='best')
+            fig.tight_layout(pad=2)
+            plt.savefig(f'{feat}_new_style.png')
 
-    def plot_side_by_side_percentage_barcharts(self, column):
+    def plot_feature_turnover_barcharts(self, column):
         '''
         Works with normalized_categoricals() from EmployeeTurnoverDataset
         Plots a bar chart comparison of employees who stayed and left
@@ -156,25 +229,27 @@ class EmployeeTurnoverVizualizations(EmployeeTurnoverDatasets):
                     'Work_accident', 'promotion_last_5years', 'department', 'salary']
         '''
     
-        stayed = self.normalized_feature['stayed_percentage'].values
-        left = self.normalized_feature['left_percentage'].values
+        for column in self.categorical_features:
+            
+            current_df = get_feature_turnover_ratio(column)
+            stayed = current_df.loc[:,'stayed_percentage'].values
+            left = current_df.loc[:,'left_percentage'].values
 
-        labels = list(self.normalized_feature.index)
-
-        fig, ax = plt.subplots(figsize=(10,5))
-        width = 0.4
-        xlocs = np.arange(len(stayed))
-        ax.bar(xlocs-width, stayed, width, label='Stayed')
-        ax.bar(xlocs, left, width, label='Left')
-        ax.set_xticks(ticks=range(len(stayed)))
-        ax.set_xticklabels(labels)
-        ax.set_xlabel(f'{column}')
-        ax.set_ylabel('Employee Percent Turnvover')
-        ax.yaxis.grid(True)
-        ax.legend(loc='best')
-        ax.set_title(f'Employer Turnover by {column}')
-        fig.tight_layout(pad=2)
-        plt.savefig(f'Employer_Turnover_by_{column}_side_barcharts.png')
+            labels = list(current_df.index)
+            fig, ax = plt.subplots(figsize=(10,5))
+            width = 0.4
+            xlocs = np.arange(len(stayed))
+            ax.bar(xlocs-width, stayed, width, label='Stayed')
+            ax.bar(xlocs, left, width, label='Left')
+            ax.set_xticks(ticks=range(len(stayed)))
+            ax.set_xticklabels(labels)
+            ax.set_xlabel(f'{column}')
+            ax.set_ylabel('Employee Percent Turnvover')
+            ax.yaxis.grid(True)
+            ax.legend(loc='best')
+            ax.set_title(f'Employer Turnover by {column}')
+            fig.tight_layout(pad=2)
+            plt.savefig(f'Employer_Turnover_by_{column}_side_barcharts.png')
 
     def plot_corr_matrix(self,df):
         '''
@@ -185,7 +260,7 @@ class EmployeeTurnoverVizualizations(EmployeeTurnoverDatasets):
         '''
 
         fig, ax = plt.subplots(figsize=(12,8))
-        ax = sns.heatmap(self.encoded_df.corr())
+        ax = sns.heatmap(self.featurize_df.corr())
         plt.tight_layout(pad=4)
         plt.savefig('correlation_matrix_newest.png')
 
@@ -198,72 +273,69 @@ class EmployeeTurnoverVizualizations(EmployeeTurnoverDatasets):
         ---UNDER CONSTRUCTION---
         '''
 
-        # _, _, self.df = encode_cat_features(df)
-
-        # print(confusion_matrix(y_test, y_pred))
-
-        # roc curve
-        fpr, tpr, thresholds = roc_curve(y_test, y_pred, pos_label=1)
+        fpr, tpr, thresholds = roc_curve(self.y_test, self.y_pred, pos_label=1)
         auc_ = auc(fpr, tpr)
 
         fig, ax = plt.subplots(figsize=(8,5))
-
-        # roc curve plot
         ax.plot([0, 1], [0, 1], 'k--')
-        ax.plot(fpr, tpr, label=f'{data_leakage_feature} = {round(recall,2)}')
+        ax.plot(fpr, tpr, label=f'AUC = {round(self.recall,2)}')
         ax.set_xlabel('False Positive Rate')
         ax.set_ylabel('True Positive Rate')
-        if drop_duplicates:
+        if self.is_dropped:
             ax.set_title('ROC Curve comparing Features After Dropping Duplicates')
         else:
             ax.set_title('ROC Curve comparing Features Before Dropping Duplicates')
         ax.legend(loc='best') 
-        # plt.savefig(f'ROC_Curve_Wout_{data_leakage_feature}_feature.png')
+        plt.savefig(f'ROC_Curve.png')
 
-    def plot_data_visualizations(df):
-        '''
-        plots all turnover eda
-        and model evaluations
-        '''
-
-        create_cat_percentage_df() # edit
-        plot_histograms()
-        plot_ROC_curve()
-        plot_percentage_comparison(df)
-        # STILL NEED TO UPDATE ROC CURVE, PROFIT CURVE, PARTIAL DEPEDENDENCE, CONFUSION MATRIX, TEST/TRAIN VAL SCORES
-        pass 
-
-    def plot_percentage_comparison(df):
+    def plot_percentage_comparison(self):
         '''
         simple bar plot returning the turnover ratio
+        --UNDER CONSTRUCTION--
         '''
-        df['left_percentage'] = df['left'].value_counts()/ len(df)
-        df['stayed_percentage'] = 1 - df['left_percentage']
 
-        # simple bar plot to compare ratio
-        pass
+        percent_left = self.left_df.shape[0] / self.df.shape[0]
+        percent_stayed = 1 - percent_left
 
-    def plot_confusion_matrix():
+        percent_comparison = np.array([percent_stayed, percent_left])
+
+        labels = ['Stayed', 'Turnover']
+        data = percent_comparison
+        N = len(percent_comparison)
+        fig, ax = plt.subplots(figsize=(8,5))
+        width = 0.8
+        tickLocations = np.arange(N)
+        ax.bar(tickLocations, data, width, linewidth=3.0, align='center')
+        ax.set_xticks(ticks=tickLocations)
+        ax.set_xticklabels(labels)
+        ax.set_xlim(min(tickLocations)-0.6,\
+                    max(tickLocations)+0.6)
+        ax.set_xlabel('Recall Scores')
+        ax.set_ylabel('Percentage')
+        ax.set_yticks(np.linspace(0,1,6))
+        ax.yaxis.grid(True)
+        ax.set_title('Recall Scores Before and After Data Leakage Exposed')
+        fig.tight_layout(pad=1)
+        plt.savefig('percent_comparison.png')
+
+    def plot_confusion_matrix(self):
         '''
         plot confusion matrix
+        --UNDER CONSTRUCTION--
         '''
 
-        con_mat = confusion_matrix(y_test, y_pred)
+        con_mat = confusion_matrix(self.y_test, self.y_pred)
         tn, fp, fn, tp = con_mat.ravel()
-        print(f'tn: {tn}\n fp: {fp}\n fn: {fn}\n tp: {tp}')
-        print(f'''Confusion matrix after leakage: \n {con_mat}''')
-        # create plot
-        pass
+        return f'tn: {tn}\n fp: {fp}\n fn: {fn}\n tp: {tp}'
+        # print(f'''Confusion matrix after leakage: \n {con_mat}''')
+        # STILL NEED TO PLOT
 
-    def plot_feat_importances():
+    def plot_feat_importances(self):
         '''
         plots feature importance of rfc model
         '''
 
-        features = list(turnover.columns)
-        feat_dict = {k: v for k, v in zip(features, rfc.feature_importances_)}
-
-        imp_feat_df = pd.DataFrame([feat_dict])
+        imp_feat_df = pd.DataFrame([self.feature_importance])
         imp_feat_df.sort_values(by=0, axis=1, inplace=True)  
         
         labels = list(imp_feat_df.columns)
@@ -283,18 +355,15 @@ class EmployeeTurnoverVizualizations(EmployeeTurnoverDatasets):
         fig.tight_layout(pad=1)
         plt.savefig('perc_by_feat_imp.png')
 
-    def plot_recall_scores():
+    def plot_recall_score_comparison(self):
         '''
-        plots recall scores in bar chart
+        plots the comparision of recall score when we remove
+        a feature to try and vizualize data leakage
         '''
-        recall_before_drop, _ = run_rfc_model(drop_duplicates=False, scores_only=True)
-        recall_after_drop, _ = run_rfc_model(drop_duplicates=True, scores_only=True)
-        
-        recall_scores_arr = np.array([recall_before_drop, recall_after_drop])
 
-        labels = ['Recall Before', 'Recall After']
-        data = recall_scores_arr
-        N = len(recall_scores_arr)
+        labels = list(self.compare_recall_scores.keys())
+        data = list(self.compare_recall_scores.values())
+        N = len(data)
         fig, ax = plt.subplots(figsize=(8,5))
         width = 0.8
         tickLocations = np.arange(N)
@@ -309,84 +378,60 @@ class EmployeeTurnoverVizualizations(EmployeeTurnoverDatasets):
         ax.yaxis.grid(True)
         ax.set_title('Recall Scores Before and After Data Leakage Exposed')
         fig.tight_layout(pad=1)
-        plt.savefig('Recall_b_a_data_leakage.png')
+        plt.savefig('percent_comparison.png')
 
-class EmployeeTurnoverClassifier():
+def main():
+    '''
+    runs Everything function so below we can do one call
+    '''
+    pass
 
-    def run_rfc_model(drop_duplicates=False, scores_only=False):
-        '''
-        runs the rfc model and returns recall score.
-        Paramater gives user the option to drop duplicates
-        found in the data to compare scores.
-        '''
+# run different classes (one before drop and one after drop)
+def plot_recall_scores(self):
+    '''
+    plots recall scores in bar chart
+    '''
+    
+    before_dropping_duplicates = EmployeeTurnoverVizualizations(df=turnover, model=RandomForestClassifier(), drop_duplicates=False)
+    after_dropping_duplicates = EmployeeTurnoverVizualizations(df=Turnover, model=RandomForestClassifier(), drop_duplicates=True)
 
-        if drop_duplicates:
-            df.drop_duplicates(keep='first', inplace=True)
+    recall_before_drop = before_dropping_duplicates.recall
+    recall_after_drop = after_dropping_duplicates.recall
+    
+    recall_scores_arr = np.array([recall_before_drop, recall_after_drop])
 
-        rfc = RandomForestClassifier()
-        y = df.pop('left').values
-        X = df.values
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-        rfc.fit(X_train, y_train)
-        y_pred = rfc.predict(X_test)
+    labels = ['Recall Before', 'Recall After']
+    data = recall_scores_arr
+    N = len(recall_scores_arr)
+    fig, ax = plt.subplots(figsize=(8,5))
+    width = 0.8
+    tickLocations = np.arange(N)
+    ax.bar(tickLocations, data, width, linewidth=3.0, align='center')
+    ax.set_xticks(ticks=tickLocations)
+    ax.set_xticklabels(labels)
+    ax.set_xlim(min(tickLocations)-0.6,\
+                max(tickLocations)+0.6)
+    ax.set_xlabel('Recall Scores')
+    ax.set_ylabel('Percentage')
+    ax.set_yticks(np.linspace(0,1,6))
+    ax.yaxis.grid(True)
+    ax.set_title('Recall Scores Before and After Data Leakage Exposed')
+    fig.tight_layout(pad=1)
+    plt.savefig('Recall_b_a_data_leakage.png')
 
-        recall = recall_score(y_test, y_pred)
-        precision = precision_score(y_test, y_pred)
-        if scores_only:
-            return recall, precision
-        elif drop_duplicates:
-            return f'recall-score After leakage: {round(recall_before_drop,2)}\nprecision-score After leakage:{round(precision,2)}'
-        else:
-            return f'recall-score before leakage: {round(recall_before_drop,2)}\nprecision-score before leakage:{round(precision,2)}'
-
-
-    def run_all_models():
-        '''
-        runs all models that were tested
-        and returns recall score.
-        '''
-        pass
-
-    def get_feature_importances(self):
-        '''
-        goes in model class
-        '''
-        rfc = RandomForestClassifier()
-        y = self.df.pop('left').values
-        recall_feature_leakage = {}
-
-        for idx in range(len(self.df.columns)):
-            features = self.features
-            data_leakage_feature = features.pop(idx)
-            X = self.df[features]
-            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-            rfc.fit(X_train, y_train)
-            y_pred = rfc.predict(X_test)
-
-            feat_dict = {k: v for k, v in zip(features, rfc.feature_importances_)}
-
-            # possible attributes
-            # print(feat_dict)
-            # print(f'data-leak-feature: {data_leakage_feature}')
-
-    def get_recall_scores(self):
-        '''
-        recall scores for features
-        ---UNDER CONSTRUCTION---
-        '''
-        
-        # has to loop through each feature; somehow utilize the method above to perform stuff; In need of a lunch break
-        recall = recall_score(y_test, y_pred)
-        precision = precision_score(y_test, y_pred)
-        print(f'recall-score: {round(recall,2)}\nprecision-score: {round(precision,2)}')
-
-        recall_feature_leakage[data_leakage_feature] = round(recall,2)
-
+def run_all_models():
+    '''
+    runs all models that were tested
+    and returns recall score.
+    '''
+    pass    
 
 if __name__=='__main__':
 
     turnover = load_n_clean_data('../data/turnover.csv')
-    t = EmployeeTurnoverDatasets(turnover)
+    t0 = EmployeeTurnoverDatasets(turnover)
+    t1 = EmployeeTurnoverClassifier(turnover, RandomForestClassifier())
+    t2 = EmployeeTurnoverVizualizations(turnover, RandomForestClassifier())
 
     # data visuals
     # create_cat_percentage_df()
