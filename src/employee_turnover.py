@@ -45,8 +45,8 @@ class EmployeeTurnoverDatasets():
         
         self.is_dropped = drop_duplicates
         # self.features = list(self.df.columns)
-        self.left_df = self.df[turnover['left']==1]
-        self.stayed_df = self.df[turnover['left']==0]
+        self.left_df = self.df[self.df['left']==1]
+        self.stayed_df = self.df[self.df['left']==0]
         self.categorical_features = ['number_project', 'time_spend_company_years',\
                     'Work_accident', 'promotion_last_5years', 'department', 'salary']
         self.continous_features = ['satisfaction_level_percentage','last_evaluation_percentage','average_montly_hours']
@@ -60,12 +60,13 @@ class EmployeeTurnoverDatasets():
         '''
         Create Featurized dataframe to pass in model
         '''
-        self.featurize_df = self.df
+        # self.featurize_df = self.df
 
         for column in columns:
-            current = self.featurize_df[column].value_counts()
+            current = self.df[column].value_counts()
             current_col = list(current.index)
-            self.featurize_df[column] = self.featurize_df[column].astype('category').cat.reorder_categories(current_col).cat.codes
+            self.df[column] = self.df[column].astype('category').cat.reorder_categories(current_col).cat.codes
+
         return None
 
     def get_feature_turnover_ratio(self, column):
@@ -168,7 +169,7 @@ class EmployeeTurnoverClassifier(EmployeeTurnoverDatasets):
         self.features = list(self.df.columns)
         self.X = self.df.values
         self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(self.X, self.y, test_size=0.2, random_state=42)
-        self.model.fit(self.X_train, self.y_train)
+        self.model.fit(X=self.X_train, y=self.y_train)
         self.y_pred = self.model.predict(self.X_test)
 
         self.feature_importance = {k: v for k, v in zip(self.features, self.model.feature_importances_)}
@@ -204,7 +205,6 @@ class EmployeeTurnoverClassifier(EmployeeTurnoverDatasets):
 
         self.feature_recall_comparison = recall_feature_leakage
         self.feature_precision_comparison = precision_feature_leakge
-        # return recall_feature_leakage
 
 class EmployeeTurnoverVizualizations(EmployeeTurnoverClassifier):
     '''
@@ -274,7 +274,7 @@ class EmployeeTurnoverVizualizations(EmployeeTurnoverClassifier):
         '''
 
         fig, ax = plt.subplots(figsize=(12,8))
-        ax = sns.heatmap(self.featurize_df.corr())
+        ax = sns.heatmap(self.df.corr())
         plt.setp(ax.get_xticklabels(), rotation=-30, ha="left",
              rotation_mode="anchor")
         plt.tight_layout(pad=4)
@@ -294,7 +294,7 @@ class EmployeeTurnoverVizualizations(EmployeeTurnoverClassifier):
 
         fig, ax = plt.subplots(figsize=(8,5))
         ax.plot([0, 1], [0, 1], 'k--')
-        ax.plot(fpr, tpr, label=f'AUC = {round(self.recall,2)}')
+        ax.plot(fpr, tpr, label=f'AUC = {round(auc_,2)}')
         ax.set_xlabel('False Positive Rate')
         ax.set_ylabel('True Positive Rate')
         if self.is_dropped:
@@ -401,26 +401,14 @@ class EmployeeTurnoverVizualizations(EmployeeTurnoverClassifier):
         fig.tight_layout(pad=1)
         plt.savefig('percent_comparison.png')
 
-def main():
-    '''
-    runs Everything function so below we can do one call
-    '''
-    pass
 
-# run different classes (one before drop and one after drop)
-def plot_recall_scores():
+def plot_recall_scores(before, after):
     '''
+    run different classes (one before drop and one after drop)
     plots recall scores in bar chart
     '''
-    
-    before_dropping_duplicates = EmployeeTurnoverVizualizations(df=turnover, model=RandomForestClassifier(), drop_duplicates=False)
-    after_dropping_duplicates = EmployeeTurnoverVizualizations(df=Turnover, model=RandomForestClassifier(), drop_duplicates=True)
 
-    recall_before_drop = before_dropping_duplicates.recall
-    recall_after_drop = after_dropping_duplicates.recall
-    
-    recall_scores_arr = np.array([recall_before_drop, recall_after_drop])
-
+    recall_scores_arr = np.array([before.recall, after.recall])
     labels = ['Recall Before', 'Recall After']
     data = recall_scores_arr
     N = len(recall_scores_arr)
@@ -448,16 +436,70 @@ def run_all_models():
     '''
     pass    
 
+def main():
+    '''
+    runs Everything function so below we can do one call
+    '''
+
+    # load data and instantiate class
+    dataset = load_n_clean_data('../data/turnover.csv')
+    turnover = EmployeeTurnoverVizualizations(dataset, RandomForestClassifier())
+    turnover_w_leakage = EmployeeTurnoverVizualizations(dataset, RandomForestClassifier(), drop_duplicates=False)
+
+    # EDA
+    turnover.df
+    turnover.salary_code
+    turnover.department_code
+    turnover.plot_percentage_comparison()
+    turnover.plot_histograms()
+    turnover.plot_feature_turnover_barcharts()
+    turnover.plot_corr_matrix()
+
+    # Run RandomForestClassifier Model
+    turnover.transform_df()
+    turnover_w_leakage.transform_df()
+    turnover_w_leakage.run_model()
+    turnover.run_model()
+
+    # Data Vizualization
+    turnover.plot_ROC_curve()
+    turnover_w_leakage.plot_ROC_curve()
+    turnover.plot_confusion_matrix()
+    turnover_w_leakage.plot_confusion_matrix()
+    turnover.plot_feat_importances()
+    turnover.compare_recall_scores()
+    turnover.plot_recall_score_comparison()
+    plot_recall_scores(turnover_w_leakage, turnover)
+
+
 if __name__=='__main__':
+    # load data and instantiate class
+    dataset = load_n_clean_data('../data/turnover.csv')
+    turnover = EmployeeTurnoverVizualizations(dataset, RandomForestClassifier())
+    turnover_w_leakage = EmployeeTurnoverVizualizations(dataset, RandomForestClassifier(), drop_duplicates=False)
 
-    turnover = load_n_clean_data('../data/turnover.csv')
-    # dataset = EmployeeTurnoverDatasets(turnover)
-    # classifier = EmployeeTurnoverClassifier(turnover, RandomForestClassifier())
-    vizualization = EmployeeTurnoverVizualizations(turnover, RandomForestClassifier())
-    vizualization.transform_df()
-    vizualization.run_model()
+    # EDA
+    turnover.df
+    turnover.salary_code
+    turnover.department_code
+    turnover.plot_percentage_comparison()
+    turnover.plot_histograms()
+    turnover.plot_feature_turnover_barcharts()
+    turnover.plot_corr_matrix()
 
-    # print(vizualization.features)
-    # vizualization.compare_recall_scores()
-    # vizualization.plot_recall_score_comparison()
-    # plt.show()
+    # Run RandomForestClassifier Model
+    turnover.transform_df()
+    turnover_w_leakage.transform_df()
+    breakpoint()
+    turnover_w_leakage.run_model()
+    turnover.run_model()
+
+    # Data Vizualization
+    turnover.plot_ROC_curve()
+    turnover_w_leakage.plot_ROC_curve()
+    turnover.plot_confusion_matrix()
+    turnover_w_leakage.plot_confusion_matrix()
+    turnover.plot_feat_importances()
+    turnover.compare_recall_scores()
+    turnover.plot_recall_score_comparison()
+    plot_recall_scores(turnover_w_leakage, turnover)
