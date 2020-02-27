@@ -31,8 +31,9 @@ def load_n_clean_data(filepath):
 
 class EmployeeTurnoverDatasets():
     '''
-    Class breaks down Turnover dataset and may return
+    Class breaks down Turnover dataset and return
     desired dataframe
+    1. first use 
     '''
 
     def __init__(self, df, drop_duplicates=True):
@@ -51,14 +52,13 @@ class EmployeeTurnoverDatasets():
         self.salary_code = None
         self.department_code = None
         self.featurize_df = None
-        self._transform_df()
+        # self.transform_df()
         self._encode_featurized_columns()
 
-    def _transform_df(self, columns=['department', 'salary']):
+    def transform_df(self, columns=['department', 'salary']):
         '''
         Create Featurized dataframe to pass in model
         '''
-
         self.featurize_df = self.df
 
         for column in columns:
@@ -143,7 +143,7 @@ class EmployeeTurnoverClassifier(EmployeeTurnoverDatasets):
         self.model = model
         self.recall = None
         self.precision = None
-        self.feature_importance = {k: v for k, v in zip(self.features, self.model.feature_importances_)}
+        self.feature_importance = None
         self.compare_recall_scores = None
         self.X_train = None
         self.X_test = None
@@ -152,7 +152,7 @@ class EmployeeTurnoverClassifier(EmployeeTurnoverDatasets):
         self.y_pred = None
         self.X = None
         self.y = None
-        self.run_model()
+        # self.run_model()
 
     def run_model(self):
         '''
@@ -166,6 +166,8 @@ class EmployeeTurnoverClassifier(EmployeeTurnoverDatasets):
         self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(self.X, self.y, test_size=0.2, random_state=42)
         self.model.fit(self.X_train, self.y_train)
         self.y_pred = self.model.predict(self.X_test)
+
+        self.feature_importance = {k: v for k, v in zip(self.features, self.model.feature_importances_)}
 
         self.recall = recall_score(self.y_test, self.y_pred)
         self.precision = precision_score(self.y_test, self.y_pred)    
@@ -192,7 +194,7 @@ class EmployeeTurnoverClassifier(EmployeeTurnoverDatasets):
 
         self.compare_recall_scores = recall_feature_leakage
 
-class EmployeeTurnoverVizualizations(EmployeeTurnoverDatasets, EmployeeTurnoverClassifier):
+class EmployeeTurnoverVizualizations(EmployeeTurnoverClassifier):
     '''
     This class plots all the data vizualizations and inherits
     the EmployeeTurnoverDatasets class
@@ -203,7 +205,7 @@ class EmployeeTurnoverVizualizations(EmployeeTurnoverDatasets, EmployeeTurnoverC
 
     def plot_histograms(self):
         '''
-        feat - continous feature from turnover dataset
+        feat - continous feature from turnover dataset  
         Best to only plot continous Features;
         These are the columns it can plot:
         ['satisfaction_level_percentage','last_evaluation_percentage','average_montly_hours']
