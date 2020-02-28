@@ -14,13 +14,17 @@ plt.style.use('ggplot')
 Under Construction - Not Ready for Deployment
 '''
 
-def load_n_clean_data(filepath):
+def load_n_clean_data(filepath, drop_leakage=True):
     '''
     loads and renames (cleans) the columns
     for the turnover file
     '''
 
     df = pd.read_csv(filepath)
+
+    if drop_leakage:
+        df.drop_duplicates(keep='first', inplace=True)
+
     rename_columns = {'satisfaction_level': 'satisfaction_level_percentage',\
                     'last_evaluation': 'last_evaluation_percentage',\
                     'time_spend_company': 'time_spend_company_years',\
@@ -37,13 +41,13 @@ class EmployeeTurnoverDatasets():
     especially for data vizualization
     '''
 
-    def __init__(self, df, drop_duplicates=True):
+    def __init__(self, df):
 
         self.df = df
-        if drop_duplicates:
-            self.df.drop_duplicates(keep='first', inplace=True)
+        # if drop_leakage:
+        #     self.df.drop_duplicates(keep='first', inplace=True)
         
-        self.is_dropped = drop_duplicates
+        # self.is_dropped = drop_duplicates
         # self.features = list(self.df.columns)
         self.left_df = self.df[self.df['left']==1]
         self.stayed_df = self.df[self.df['left']==0]
@@ -139,7 +143,7 @@ class EmployeeTurnoverClassifier(EmployeeTurnoverDatasets):
     results
     '''
 
-    def __init__(self, df, model, drop_duplicates=True):
+    def __init__(self, df, model):
 
         super().__init__(df)
         self.model = model
@@ -212,8 +216,8 @@ class EmployeeTurnoverVizualizations(EmployeeTurnoverClassifier):
     the EmployeeTurnoverDatasets class
     '''
     
-    def __init__(self, df, model, drop_duplicates=True):
-        super().__init__(df, model, drop_duplicates=True)
+    def __init__(self, df, model):
+        super().__init__(df, model)
 
     def plot_histograms(self):
         '''
@@ -297,7 +301,7 @@ class EmployeeTurnoverVizualizations(EmployeeTurnoverClassifier):
         ax.plot(fpr, tpr, label=f'AUC = {round(auc_,2)}')
         ax.set_xlabel('False Positive Rate')
         ax.set_ylabel('True Positive Rate')
-        if self.is_dropped:
+        if self.df.shape[0] == 11991:
             ax.set_title('ROC Curve comparing Features After Dropping Duplicates')
         else:
             ax.set_title('ROC Curve comparing Features Before Dropping Duplicates')
@@ -399,7 +403,7 @@ class EmployeeTurnoverVizualizations(EmployeeTurnoverClassifier):
         ax.yaxis.grid(True)
         ax.set_title('Recall Scores Comparing Feature Extraction')
         fig.tight_layout(pad=1)
-        plt.savefig('percent_comparison.png')
+        plt.savefig('feature_recall_comparison.png')
 
 
 def plot_recall_scores(before, after):
@@ -444,7 +448,7 @@ def main():
     # load data and instantiate class
     dataset = load_n_clean_data('../data/turnover.csv')
     turnover = EmployeeTurnoverVizualizations(dataset, RandomForestClassifier())
-    turnover_w_leakage = EmployeeTurnoverVizualizations(dataset, RandomForestClassifier(), drop_duplicates=False)
+    turnover_w_leakage = EmployeeTurnoverVizualizations(dataset, RandomForestClassifier())
 
     # EDA
     turnover.df
@@ -476,30 +480,35 @@ if __name__=='__main__':
     # load data and instantiate class
     dataset = load_n_clean_data('../data/turnover.csv')
     turnover = EmployeeTurnoverVizualizations(dataset, RandomForestClassifier())
-    turnover_w_leakage = EmployeeTurnoverVizualizations(dataset, RandomForestClassifier(), drop_duplicates=False)
+    # turnover_w_leakage = EmployeeTurnoverVizualizations(dataset, RandomForestClassifier(), drop_duplicates=False)
 
     # EDA
-    turnover.df
-    turnover.salary_code
-    turnover.department_code
-    turnover.plot_percentage_comparison()
-    turnover.plot_histograms()
-    turnover.plot_feature_turnover_barcharts()
-    turnover.plot_corr_matrix()
+    # turnover.df
+    # turnover.salary_code
+    # turnover.department_code
+    # turnover.plot_percentage_comparison()
+    # turnover.plot_histograms()
+    # turnover.plot_feature_turnover_barcharts()
+    # turnover.plot_corr_matrix()
 
     # Run RandomForestClassifier Model
     turnover.transform_df()
-    turnover_w_leakage.transform_df()
-    breakpoint()
-    turnover_w_leakage.run_model()
+    # turnover_w_leakage.transform_df()
+    # breakpoint()
+    # turnover_w_leakage.run_model()
     turnover.run_model()
 
     # Data Vizualization
-    turnover.plot_ROC_curve()
-    turnover_w_leakage.plot_ROC_curve()
-    turnover.plot_confusion_matrix()
-    turnover_w_leakage.plot_confusion_matrix()
-    turnover.plot_feat_importances()
-    turnover.compare_recall_scores()
-    turnover.plot_recall_score_comparison()
+    # turnover.plot_ROC_curve()
+    # turnover_w_leakage.plot_ROC_curve()
+    # turnover.plot_confusion_matrix()
+    # turnover_w_leakage.plot_confusion_matrix()
+    # turnover.plot_feat_importances()
+    # turnover.compare_recall_scores()
+    # turnover.plot_recall_score_comparison()
+
+    dataset2 = load_n_clean_data('../data/turnover.csv', drop_leakage=False)
+    turnover_w_leakage = EmployeeTurnoverVizualizations(dataset2, RandomForestClassifier())
+    turnover_w_leakage.transform_df()
+    turnover_w_leakage.run_model()
     plot_recall_scores(turnover_w_leakage, turnover)
