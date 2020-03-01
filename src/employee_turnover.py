@@ -473,21 +473,46 @@ def main():
     '''
     pass
 
+def plot_fake_employee_turnover_costs():
+    fake_salary = np.linspace(30000, 200000, num=11)
+    
+    turnover_cost = []
+    for salary in fake_salary:
+        cost = salary * (2/3)
+        turnover_cost.append(cost)
+
+    m, b = np.polyfit(fake_salary, turnover_cost,1)
+
+    fig, ax = plt.subplots(figsize=(8,5))
+    ax.scatter(fake_salary, turnover_cost)
+    ax.plot(fake_salary, (m*fake_salary +b))
+    ax.set_xlabel('Yearly Salary')
+    ax.set_ylabel('Employee Turnover Cost')
+    ax.set_title('Cost of Employee Turnover Based on Yearly Salary')
+    plt.tight_layout(pad=1)
+    plt.savefig('employee_turnover_yearly_salary.png')
+
+    # print(len(turnover_cost))
+
+
 if __name__=='__main__':
-    data = load_n_clean_data('../data/turnover.csv')
-    turnover = EmployeeTurnoverVizualizations(data, RandomForestClassifier())
+    # data = load_n_clean_data('../data/turnover.csv')
+    # turnover = EmployeeTurnoverVizualizations(data, RandomForestClassifier())
     
     # modeling
     # turnover.transform_df()
     # turnover.run_model()
     # turnover.compare_recall_scores()
+    # print(turnover.feature_f1score_comparison)
     # turnover.plot_f1_score_comparison()
     # before_leakage = turnover.f1_score
     # after_leakage = turnover.feature_f1score_comparison['time_spend_company_years']
     # plot_f1_scores(before_leakage, after_leakage)
     # turnover.plot_feat_importances()
     # turnover.plot_histograms()
-    turnover.plot_feature_turnover_barcharts()
-    plt.show()
+    # turnover.plot_feature_turnover_barcharts()
+    # plt.show()
 
-    #expose data leakage
+    # fake salary 
+    plot_fake_employee_turnover_costs()
+    plt.show()
