@@ -6,18 +6,13 @@ from sklearn.metrics import confusion_matrix, roc_curve, auc
 from sklearn.ensemble import RandomForestClassifier
 from sklearn import tree
 import numpy as np
-from sklearn.metrics import recall_score, precision_score, precision_recall_curve, f1_score
-# from sklearn.metrics import plot_precision_recall_curve
+from sklearn.metrics import recall_score, precision_score, f1_score
 plt.style.use('seaborn')
 
 
-'''
-Under Construction - Not Ready for Deployment
-'''
-
 def load_n_clean_data(filepath):
     '''
-    loads and renames (cleans) the columns
+    loads, renames, and cleans the columns
     for the turnover file
     '''
 
@@ -33,8 +28,7 @@ def load_n_clean_data(filepath):
 
 class EmployeeTurnoverDatasets():
     '''
-    Class breaks down Turnover dataset and return
-    desired dataframe
+    Class converts desired dataframe
     1. Highly Recommend - Use the transform_df() last 
     especially for data vizualization
     '''
@@ -176,16 +170,15 @@ class EmployeeTurnoverClassifier(EmployeeTurnoverDatasets):
         self.precision = precision_score(self.y_test, self.y_pred)
         self.f1_score = f1_score(self.y_test, self.y_pred)    
 
-    def compare_recall_scores(self):
+    def compare_metric_scores(self):
         '''
-        recall scores for features
-        ---UNDER CONSTRUCTION---
+        recall, precision, and F1 scores for features
         '''
         
         recall_feature_leakage = {}
         precision_feature_leakge = {}
         f1_feature_leakage = {}
-        # breakpoint()
+
         for idx in range(len(self.features)):
             local_feature = ['satisfaction_level_percentage', 'last_evaluation_percentage',\
                     'number_project', 'average_montly_hours',\
@@ -289,7 +282,6 @@ class EmployeeTurnoverVizualizations(EmployeeTurnoverClassifier):
         plots correlation matrix to
         find correlation among columns
         in turnover dataset
-        (uses self.encoded_df)
         '''
 
         fig, ax = plt.subplots(figsize=(12,8))
@@ -302,10 +294,6 @@ class EmployeeTurnoverVizualizations(EmployeeTurnoverClassifier):
     def plot_ROC_curve(self):
         '''
         plot roc curve based on given model
-        paramater - "drop_duplicates" gives user
-        the option to exploit data leakage
-        before or after to compare
-        ---UNDER CONSTRUCTION---
         '''
 
         fpr, tpr, thresholds = roc_curve(self.y_test, self.y_pred, pos_label=1)
@@ -355,27 +343,21 @@ class EmployeeTurnoverVizualizations(EmployeeTurnoverClassifier):
     def plot_confusion_matrix(self):
         '''
         plot confusion matrix
-        --UNDER CONSTRUCTION--
         '''
 
         con_mat = confusion_matrix(self.y_test, self.y_pred)
         tn, fp, fn, tp = con_mat.ravel()
         
-        # return print(f'tn: {tn}\n fp: {fp}\n fn: {fn}\n tp: {tp}')
         return np.array([[tn, fp],
                          [fn, tp]])
-        # print(f'''Confusion matrix after leakage: \n {con_mat}''')
-        # STILL NEED TO PLOT
 
     def plot_feat_importances(self):
         '''
         plots feature importance of rfc model
         '''
 
-        # breakpoint()
         imp_feat_df = pd.DataFrame([self.feature_importance])
         imp_feat_df.sort_values(by=0, axis=1, inplace=True)  
-
         
         labels = ['Promoted In The Last 5 Years', 'Accident at Work', 'Salary', 'Department',\
                   'last Performance Score', 'Number Of Projects', 'Time Spent in Company in Years',\
@@ -396,12 +378,11 @@ class EmployeeTurnoverVizualizations(EmployeeTurnoverClassifier):
         fig.tight_layout(pad=1)
         plt.savefig('perc_by_feat_imp.png')
 
-    def plot_f1_score_comparison(self):
+    def plot_f1_score_features(self):
         '''
-        plots the comparision of recall score when we remove
+        plots the comparision of f1 score when we remove
         a feature to try and vizualize data leakage
         '''
-
        
         labels = self.labels
         data = list(self.feature_f1score_comparison.values())
@@ -424,12 +405,6 @@ class EmployeeTurnoverVizualizations(EmployeeTurnoverClassifier):
         ax.set_title('F1 Scores Comparing Features')
         fig.tight_layout(pad=1)
         plt.savefig('feature_F1_comparison.png')
-
-    # def plot_f1_score(self):
-
-    #     disp = plot_precision_recall_curve(self.model, self.X_test, self.y_test)
-    #     disp.ax_.set_title('2-class Precision-Recall curve: '
-    #                'AP={0:0.2f}'.format(average_precision))
 
 def plot_f1_scores(before, after):
     '''
@@ -458,22 +433,8 @@ def plot_f1_scores(before, after):
     fig.tight_layout(pad=1)
     plt.savefig('F1_b_a_data_leakage.png')
 
-def run_all_models():
-    '''
-    runs all/different models that were tested
-    and returns recall score.
-    to be continued.
-    --UNDER CONSTRUCTION--
-    '''
-    pass    
 
-def main():
-    '''
-    runs Everything function so below we can do one call
-    '''
-    pass
-
-def plot_fake_employee_turnover_costs():
+def plot_generated_employee_turnover_costs():
     fake_salary = np.linspace(30000, 200000, num=11)
     
     turnover_cost = []
@@ -492,27 +453,26 @@ def plot_fake_employee_turnover_costs():
     plt.tight_layout(pad=1)
     plt.savefig('employee_turnover_yearly_salary.png')
 
-    # print(len(turnover_cost))
-
 
 if __name__=='__main__':
-    # data = load_n_clean_data('../data/turnover.csv')
-    # turnover = EmployeeTurnoverVizualizations(data, RandomForestClassifier())
+
+    # load data
+    data = load_n_clean_data('../data/turnover.csv')
+    turnover = EmployeeTurnoverVizualizations(data, RandomForestClassifier())
     
     # modeling
-    # turnover.transform_df()
-    # turnover.run_model()
-    # turnover.compare_recall_scores()
-    # print(turnover.feature_f1score_comparison)
-    # turnover.plot_f1_score_comparison()
-    # before_leakage = turnover.f1_score
-    # after_leakage = turnover.feature_f1score_comparison['time_spend_company_years']
-    # plot_f1_scores(before_leakage, after_leakage)
-    # turnover.plot_feat_importances()
-    # turnover.plot_histograms()
-    # turnover.plot_feature_turnover_barcharts()
-    # plt.show()
+    turnover.transform_df()
+    turnover.run_model()
+    turnover.compare_metric_scores()
+    print(turnover.feature_f1score_comparison)
 
-    # fake salary 
-    plot_fake_employee_turnover_costs()
+    # visualization
+    turnover.plot_f1_score_features()
+    before_leakage = turnover.f1_score
+    after_leakage = turnover.feature_f1score_comparison['time_spend_company_years']
+    plot_f1_scores(before_leakage, after_leakage)
+    turnover.plot_feat_importances()
+    turnover.plot_histograms()
+    turnover.plot_feature_turnover_barcharts()
+    plot_generated_employee_turnover_costs()
     plt.show()
